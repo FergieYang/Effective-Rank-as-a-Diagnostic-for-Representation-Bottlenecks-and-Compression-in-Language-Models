@@ -1,0 +1,182 @@
+Codex project notes - 2026-04-20
+
+Project:
+Effective rank as a diagnostic for representation bottlenecks and compression
+in a small language model, currently Qwen/Qwen3-0.6B.
+
+General coding direction:
+- Keep scripts simple, clean, and mostly linear.
+- Avoid turning the project into a framework.
+- Each script should do one job and save clean outputs.
+- Analysis/interpretation should be separated from collection scripts.
+- Current outputs go under result/, not data/, artifact/, output/, or report/.
+
+Setup scripts created:
+- script/0_download_model.py
+  - Downloads Qwen/Qwen3-0.6B by default.
+  - Saves to artifact/models/Qwen3-0.6B.
+- script/0_download_data.py
+  - Downloads Salesforce/wikitext, wikitext-2-raw-v1 by default.
+  - Saves train/validation/test text files under data/wikitext2.
+
+Rank collection scripts:
+- script/1_collect_weight_rank.py
+  - Static weight-only inspection.
+  - Now restricted to MLP Linear weights only:
+    - mlp.gate_proj
+    - mlp.up_proj
+    - mlp.down_proj
+  - Attention weights and lm_head are intentionally excluded.
+  - Computes singular-value effective rank:
+    effective_rank = exp(-sum_i p_i log p_i),
+    p_i = sigma_i / sum_j sigma_j.
+  - Saves:
+    - result/weight_rank/weight_rank.csv
+    - result/weight_rank/weight_rank_meta.json
+    - result/weight_rank/weight_singular_values.pt
+
+- script/1_collect_activation_rank.py
+  - Runs real text through the model.
+  - Now focused on MLP input activations only.
+  - Hooks post_attention_layernorm output, which is the normalized input to:
+    - mlp.gate_proj
+    - mlp.up_proj
+  - This activation is only a block-level proxy for mlp.down_proj, because
+    down_proj's direct input is the gated intermediate MLP activation.
+  - Default data source is now data/wikitext2/train.txt.
+  - Default sample size is 65,536 token activations per layer.
+  - Tokenization is done line by line and then arranged into fixed-length
+    windows, avoiding the long-sequence tokenizer warning.
+  - Windows are sampled evenly across the corpus to improve stability.
+  - Saves:
+    - result/activation_rank/activation_rank.csv
+    - result/activation_rank/activation_rank_meta.json
+    - result/activation_rank/activation_eigenvalues.pt
+
+Important design decision: focus on MLP
+- We decided to focus compression experiments on MLP rather than attention.
+- Reason:
+  - MLP weights contain a large fraction of parameters.
+  - MLP compression is easier to interpret as low-rank linear compression.
+  - Attention has q/k/v/o interactions, softmax, and sequence-position effects,
+    making it a messier first compression target.
+- Attention can still be mentioned as future work or comparison, but the main
+  project story should be MLP compression.
+
+Important design decision: use MLP input, not output
+- The project plan frames one layer as:
+  y = phi(Wu), where u = Norm(x).
+- r_u is meant to measure the representation spectrum of the input u seen by W.
+- Therefore the compression signal should come from the input distribution to
+  the weight matrix, not from the output after the matrix has already acted.
+- Output rank is more circular:
+  low output rank could come from low input rank, the weight collapsing
+  directions, activation/gating effects, or all of these.
+- For Qwen MLPs, post_attention_layernorm output is the clean MLP input u for
+  gate_proj and up_proj.
+
+Important design decision: centered covariance as main activation rank
+- Initial activation-rank results used uncentered second moment X.T @ X / n.
+- That gave very low ranks and traces that were hard to interpret.
+- We decided to use centered covariance as the main activation-rank estimate:
+  Cov(X) = E[x x^T] - E[x]E[x]^T.
+- The script now accumulates sum(x) and sum(x x^T), not raw activations.
+- CSV column effective_rank uses centered covariance eigenvalues.
+- CSV column second_moment_effective_rank is retained only as a diagnostic.
+- This matters: in the current run, centered effective rank is much higher than
+  uncentered rank, showing the uncentered estimate was dominated by common
+  directions.
+
+Current result snapshot after MLP-focused rerun:
+- weight_rank.csv:
+  - 84 rows = 28 layers x 3 MLP matrices.
+  - MLP weight effective-rank ratios are uniformly high.
+  - Average MLP weight rank ratio is about 0.917.
+  - Range is about 0.885 to 0.946.
+  - By module:
+    - gate_proj avg about 0.910
+    - up_proj avg about 0.925
+    - down_proj avg about 0.914
+- activation_rank.csv:
+  - 28 rows = one MLP-input activation row per layer.
+  - 65,536 token samples per layer.
+  - 128 windows of 512 tokens.
+  - Centered MLP-input activation rank ratio average about 0.272.
+  - Range about 0.108 to 0.389.
+  - Uncentered second-moment rank ratio average about 0.051.
+
+Initial interpretation:
+- Weight ranks are high and relatively flat across layers.
+- Activation ranks vary much more across layers.
+- Therefore, if effective rank is useful as a compression signal, it will likely
+  come mainly from MLP-input activation rank rather than weight rank alone.
+- This gives a clean story:
+  MLP weights have broad spectra, but actual MLP inputs on WikiText occupy a
+  lower-dimensional effective subspace, and that subspace size varies by layer.
+
+Candidate compression layers from current result:
+- Largest mismatch between average MLP weight rank ratio and MLP-input
+  activation rank ratio:
+  - layer 27: gap about 0.815, activation ratio about 0.108
+  - layer 26: gap about 0.741, activation ratio about 0.186
+  - layer 17: gap about 0.715, activation ratio about 0.193
+  - layer 18: gap about 0.715, activation ratio about 0.196
+  - layer 19: gap about 0.707, activation ratio about 0.202
+  - layer 20: gap about 0.699, activation ratio about 0.208
+  - layer 16: gap about 0.697, activation ratio about 0.215
+- These are natural aggressive-compression candidates.
+- Highest activation-rank layers:
+  - layers 5, 7, 6, 8, 0, 4, 9.
+  - These are natural layers to protect more.
+- Caution:
+  - layer 27 has extremely low activation rank, but final layers can be
+    behaviorally important. For compression experiments, consider both:
+    - rank-guided including layer 27
+    - rank-guided excluding final layer
+
+Recommended next analysis:
+- Build a merged rank table by layer:
+  - layer_index
+  - MLP input activation effective_rank_ratio
+  - gate_proj/up_proj/down_proj weight rank ratios
+  - average MLP weight rank ratio
+  - gap = average_weight_rank_ratio - activation_rank_ratio
+- Make a rank profile plot:
+  - x-axis: layer index
+  - y-axis: effective rank ratio
+  - lines for MLP input activation rank and MLP weight ranks.
+- Use activation rank to define candidate compression policy:
+  - low activation-rank layers: compress more aggressively
+  - high activation-rank layers: protect more
+
+Recommended compression experiment:
+- Start with low-rank approximation before quantization, because it connects
+  directly to effective rank and is easier to explain.
+- Compare:
+  - baseline uncompressed perplexity
+  - uniform MLP low-rank compression
+  - rank-guided MLP low-rank compression
+  - reverse-rank MLP low-rank compression
+- A simple policy:
+  - bottom third activation-rank layers: keep 25 percent rank
+  - middle third: keep 50 percent rank
+  - top third: keep 75 percent rank
+  - uniform baseline: keep 50 percent rank everywhere
+  - reverse baseline: bottom/top assignments swapped
+- The reverse policy is useful because it tests whether the signal has the
+  expected direction.
+
+Possible next scripts:
+- 2_merge_rank_results.py
+- 2_plot_rank_profiles.py
+- 3_eval_baseline_ppl.py
+- 4_low_rank_mlp.py
+- 5_eval_compressed_ppl.py
+
+Concise report framing:
+We restrict compression experiments to MLP blocks because their linear structure
+makes the connection between input representation rank and weight compression
+direct. We estimate the effective rank of normalized MLP inputs and compare it
+to the effective rank of MLP weight matrices. A large mismatch between low input
+rank and high weight rank suggests potential overcapacity. We then test whether
+layers with lower MLP input rank tolerate stronger low-rank compression.

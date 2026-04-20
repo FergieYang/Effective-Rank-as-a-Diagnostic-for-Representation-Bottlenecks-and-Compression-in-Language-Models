@@ -1,0 +1,16 @@
+{
+  "created_at": "2026-04-20T16:29:43",
+  "model_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\artifact\\models\\Qwen3-0.6B",
+  "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\data\\wikitext2\\train.txt",
+  "output_dir": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\result\\activation_rank",
+  "device": "cuda",
+  "torch_dtype": "auto",
+  "num_layers": 28,
+  "max_length": 512,
+  "batch_size": 1,
+  "max_token_samples": 65536,
+  "num_windows": 128,
+  "hook": "post_attention_layernorm output, the normalized input to the MLP gate_proj and up_proj weights.",
+  "aggregation": "Tokenize the text file line by line, build fixed-length windows, sample windows evenly across the corpus, and accumulate sum(x) plus sum(x x^T). The main effective_rank uses centered covariance.",
+  "definition": "effective_rank = exp(-sum_i p_i log p_i), p_i = lambda_i / sum_j lambda_j. CSV effective_rank uses centered covariance eigenvalues; second_moment_effective_rank is kept as a comparison."
+}

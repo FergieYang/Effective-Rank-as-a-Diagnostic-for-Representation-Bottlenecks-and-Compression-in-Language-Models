@@ -1,7 +1,7 @@
 """Download the language model used by the project.
 
 Default target:
-    Qwen/Qwen3-0.6B -> artifact/models/Qwen3-0.6B
+    Qwen/Qwen3-0.6B -> artifact/models/Qwen3-0.6B/base
 """
 
 from __future__ import annotations
@@ -9,10 +9,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from _model_layout import DEFAULT_BASE_MODEL_DIR
 
 DEFAULT_MODEL_ID = "Qwen/Qwen3-0.6B"
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "artifact" / "models" / "Qwen3-0.6B"
+DEFAULT_OUTPUT_DIR = DEFAULT_BASE_MODEL_DIR
 
 
 def parse_args() -> argparse.Namespace:

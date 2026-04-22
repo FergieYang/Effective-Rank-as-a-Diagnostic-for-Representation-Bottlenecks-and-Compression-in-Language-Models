@@ -6,9 +6,9 @@ input. It avoids saving raw activations and only writes spectra plus summary
 rows.
 
 Outputs:
-    result/activation_rank/activation_rank.csv
-    result/activation_rank/activation_rank_meta.json
-    result/activation_rank/activation_eigenvalues.pt
+    result/1_activation_rank/activation_rank.csv
+    result/1_activation_rank/activation_rank_meta.json
+    result/1_activation_rank/activation_eigenvalues.pt
 """
 
 from __future__ import annotations
@@ -19,11 +19,13 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from _model_layout import DEFAULT_BASE_MODEL_DIR
+from tqdm.auto import tqdm
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_MODEL_PATH = PROJECT_ROOT / "artifact" / "models" / "Qwen3-0.6B"
+DEFAULT_MODEL_PATH = DEFAULT_BASE_MODEL_DIR
 DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "wikitext2" / "train.txt"
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "result" / "activation_rank"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "result" / "1_activation_rank"
 
 
 def parse_args() -> argparse.Namespace:
@@ -133,7 +135,7 @@ def main() -> None:
     except ImportError as exc:
         raise SystemExit(
             "Missing dependency. Install the project basics with:\n"
-            "  pip install torch transformers"
+            "  pip install torch transformers tqdm"
         ) from exc
 
     if not args.data_path.exists():
@@ -201,6 +203,7 @@ def main() -> None:
         torch=torch,
     )
 
+    progress = tqdm(total=len(windows), desc="Streaming activation windows", unit="window")
     with torch.no_grad():
         for batch in make_batches(
             windows=windows,
@@ -210,15 +213,21 @@ def main() -> None:
             batch = batch.to(device)
             attention_mask = torch.ones_like(batch, device=device)
             model(input_ids=batch, attention_mask=attention_mask, use_cache=False)
+            progress.update(int(batch.shape[0]))
             if min(token_counts) >= args.max_token_samples:
                 break
+    progress.close()
 
     for hook in hooks:
         hook.remove()
 
     rows = []
     eigenvalues_by_layer = {}
-    for layer_index, second_moment in enumerate(second_moments):
+    for layer_index, second_moment in tqdm(
+        list(enumerate(second_moments)),
+        desc="Computing activation spectra",
+        unit="layer",
+    ):
         if second_moment is None:
             raise SystemExit(f"No activations were collected for layer {layer_index}.")
 

@@ -14,7 +14,7 @@ General coding direction:
 Setup scripts created:
 - script/0_download_model.py
   - Downloads Qwen/Qwen3-0.6B by default.
-  - Saves to artifact/models/Qwen3-0.6B.
+  - Saves to artifact/models/Qwen3-0.6B/base.
 - script/0_download_data.py
   - Downloads Salesforce/wikitext, wikitext-2-raw-v1 by default.
   - Saves train/validation/test text files under data/wikitext2.
@@ -27,13 +27,15 @@ Rank collection scripts:
     - mlp.up_proj
     - mlp.down_proj
   - Attention weights and lm_head are intentionally excluded.
-  - Computes singular-value effective rank:
+  - Main weight effective-rank definition now uses squared singular values:
     effective_rank = exp(-sum_i p_i log p_i),
-    p_i = sigma_i / sum_j sigma_j.
+    p_i = sigma_i^2 / sum_j sigma_j^2.
+  - The older sigma_i / sum_j sigma_j version is retained only as a secondary
+    continuity column in the CSV.
   - Saves:
-    - result/weight_rank/weight_rank.csv
-    - result/weight_rank/weight_rank_meta.json
-    - result/weight_rank/weight_singular_values.pt
+    - result/1_weight_rank/weight_rank.csv
+    - result/1_weight_rank/weight_rank_meta.json
+    - result/1_weight_rank/weight_singular_values.pt
 
 - script/1_collect_activation_rank.py
   - Runs real text through the model.
@@ -49,9 +51,9 @@ Rank collection scripts:
     windows, avoiding the long-sequence tokenizer warning.
   - Windows are sampled evenly across the corpus to improve stability.
   - Saves:
-    - result/activation_rank/activation_rank.csv
-    - result/activation_rank/activation_rank_meta.json
-    - result/activation_rank/activation_eigenvalues.pt
+    - result/1_activation_rank/activation_rank.csv
+    - result/1_activation_rank/activation_rank_meta.json
+    - result/1_activation_rank/activation_eigenvalues.pt
 
 Important design decision: focus on MLP
 - We decided to focus compression experiments on MLP rather than attention.
@@ -87,16 +89,30 @@ Important design decision: centered covariance as main activation rank
   uncentered rank, showing the uncentered estimate was dominated by common
   directions.
 
+Important design decision: use sigma squared for weight rank
+- We decided to define the main weight effective rank from sigma_i^2 rather
+  than sigma_i.
+- Reason:
+  - low-rank approximation error in Frobenius norm is governed by the tail of
+    sigma_i^2, not sigma_i
+  - this makes the weight diagnostic line up better with compression
+  - it also matches the fact that activation spectra are already second-order
+    quantities
+- Consequence:
+  - all older weight-rank averages and ranges in this note were computed with
+    the earlier sigma_i-based definition and should be treated as stale until
+    the weight-rank, merge, and plot scripts are rerun
+
 Current result snapshot after MLP-focused rerun:
 - weight_rank.csv:
   - 84 rows = 28 layers x 3 MLP matrices.
-  - MLP weight effective-rank ratios are uniformly high.
-  - Average MLP weight rank ratio is about 0.917.
-  - Range is about 0.885 to 0.946.
-  - By module:
-    - gate_proj avg about 0.910
-    - up_proj avg about 0.925
-    - down_proj avg about 0.914
+  - The numerical snapshot below is stale after the sigma_i^2 definition change.
+  - Rerun:
+    - script/1_collect_weight_rank.py
+    - script/2_merge_rank_results.py
+    - script/2_plot_rank_profiles.py
+  - Expect the main weight effective-rank ratios to be lower than the older
+    sigma_i-based values, because squaring concentrates spectral mass.
 - activation_rank.csv:
   - 28 rows = one MLP-input activation row per layer.
   - 65,536 token samples per layer.
@@ -106,7 +122,8 @@ Current result snapshot after MLP-focused rerun:
   - Uncentered second-moment rank ratio average about 0.051.
 
 Initial interpretation:
-- Weight ranks are high and relatively flat across layers.
+- Weight ranks are expected to remain relatively flat across layers, but their
+  exact level should now be interpreted from the sigma_i^2 rerun.
 - Activation ranks vary much more across layers.
 - Therefore, if effective rank is useful as a compression signal, it will likely
   come mainly from MLP-input activation rank rather than weight rank alone.
@@ -180,3 +197,213 @@ direct. We estimate the effective rank of normalized MLP inputs and compare it
 to the effective rank of MLP weight matrices. A large mismatch between low input
 rank and high weight rank suggests potential overcapacity. We then test whether
 layers with lower MLP input rank tolerate stronger low-rank compression.
+
+
+
+
+
+
+Session summary - 2026-04-21
+
+Main code and experiment progress:
+- Added stage-2 analysis scripts:
+  - script/2_merge_rank_results.py
+  - script/2_plot_rank_profiles.py
+- These save to:
+  - result/2_rank_analysis/merged_rank_results.csv
+  - result/2_rank_analysis/merged_rank_results_meta.json
+  - result/2_rank_analysis/rank_profile.png
+  - result/2_rank_analysis/rank_profile.svg
+  - result/2_rank_analysis/rank_gap.png
+  - result/2_rank_analysis/rank_gap.svg
+  - result/2_rank_analysis/rank_plots_meta.json
+
+Weight-rank definition update:
+- We changed the main weight effective-rank definition from sigma_i to sigma_i^2.
+- script/1_collect_weight_rank.py now uses:
+  - effective_rank based on p_i = sigma_i^2 / sum_j sigma_j^2
+  - singular_value_effective_rank as a secondary continuity column
+- After rerunning with the sigma_i^2 definition:
+  - average MLP weight effective-rank ratio is about 0.744
+  - range is about 0.589 to 0.835
+  - by module:
+    - gate_proj avg about 0.715
+    - up_proj avg about 0.773
+    - down_proj avg about 0.743
+- This is lower than the earlier sigma_i-based snapshot, as expected, but the
+  qualitative story remains the same:
+  - activation rank is still much lower and much more layer-varying than weight rank
+  - the activation-vs-weight mismatch remains the main compression signal
+
+Updated merged-rank picture under sigma_i^2:
+- The top mismatch layers after the rerun are now:
+  - 27
+  - 26
+  - 1
+  - 18
+  - 17
+- Late layers are still important, but layer 1 now also stands out as a strong
+  overcapacity candidate under the new weight metric.
+
+Compression design decisions locked in:
+- Focus the first compression experiment on MLP only.
+- Compress only:
+  - mlp.gate_proj
+  - mlp.up_proj
+- Do not compress:
+  - mlp.down_proj
+  - final transformer layer
+- Reason:
+  - the collected activation statistic is the true MLP input for gate_proj and up_proj
+  - it is only a proxy for down_proj
+- Use centered activation effective rank to define target rank counts.
+- Use uncentered activation second moment E[u u^T] inside the activation-aware
+  compression objective.
+
+Implemented stage-3 compression scripts:
+- Added shared helper:
+  - script/_3_compression_common.py
+- Added compression layout helper:
+  - script/_model_layout.py
+- Added three compression scripts:
+  - script/3_plain_svd_baseline.py
+  - script/3_activation_aware_uniform.py
+  - script/3_activation_aware_layerwise.py
+
+Compression methods implemented:
+- Method 1:
+  - plain SVD baseline
+  - uniform target rank
+  - target rank = rounded(alpha * mean centered activation effective rank)
+- Method 2:
+  - activation-aware within-layer compression
+  - uniform target rank
+  - same uniform budget as method 1
+- Method 3:
+  - activation-aware within-layer compression
+  - layer-varying target ranks
+  - layer ranks proportional to centered activation effective rank
+  - integer-adjusted to match the exact total rank budget of the uniform baseline
+
+Current activation-aware objective:
+- The activation-aware methods minimize a weighted low-rank approximation based
+  on the uncentered second moment of the MLP input:
+  - E || (W - W_hat) u ||^2
+- We collect and cache the required second moments at:
+  - result/1_activation_rank/activation_second_moments_gate_up.pt
+
+Compression output layout update:
+- We standardized model paths to support multiple base models cleanly.
+- New model layout:
+  - artifact/models/<base_model_id>/base/
+  - artifact/models/<base_model_id>/<method_id>/<alpha_tag>/
+- For Qwen, intended examples are:
+  - artifact/models/Qwen3-0.6B/base/
+  - artifact/models/Qwen3-0.6B/plain_svd_uniform/a1p00/
+  - artifact/models/Qwen3-0.6B/activation_aware_uniform/a1p00/
+  - artifact/models/Qwen3-0.6B/activation_aware_layerwise/a1p00/
+- Metadata now stores:
+  - base_model_id
+  - method_id
+  - alpha
+  - alpha_tag
+
+Result folder naming update:
+- We changed the default result folders to include the step number:
+  - result/1_activation_rank/
+  - result/1_weight_rank/
+  - result/2_rank_analysis/
+  - result/4_benchmark/
+
+Benchmark scripts added:
+- Added:
+  - script/4_summarize_effective_size.py
+  - script/4_benchmark_perplexity.py
+- These write to:
+  - result/4_benchmark/effective_size_summary.csv
+  - result/4_benchmark/effective_size_summary.json
+  - result/4_benchmark/perplexity_benchmark.csv
+  - result/4_benchmark/perplexity_benchmark.json
+
+Benchmark interpretation learned from the first run:
+- The compressed checkpoints are still saved as dense Hugging Face models.
+- Therefore:
+  - they are valid for perplexity evaluation
+  - they are not yet valid for claiming true low-rank checkpoint compression
+  - the effective factorized parameter count must be treated as the real
+    compression-accounting metric for now
+
+Disk-size bookkeeping fix:
+- We found a serialization mismatch between the downloaded base checkpoint and
+  the resaved compressed checkpoints.
+- The base checkpoint explicitly stores both:
+  - model.embed_tokens.weight
+  - lm_head.weight
+- The resaved checkpoints only store the tied embedding once.
+- Because tie_word_embeddings = true, the old raw .safetensors size comparison
+  was misleading.
+- script/4_summarize_effective_size.py now reports a comparable payload size
+  that removes duplicated lm_head storage when appropriate.
+
+Perplexity benchmark result from the first alpha = 1.0 run:
+- Base model perplexity on validation.txt is about 28.7.
+- Plain SVD baseline is much worse:
+  - ppl about 30476.7
+- Activation-aware uniform is much better than plain SVD:
+  - ppl about 153.1
+- Activation-aware layerwise is slightly better than activation-aware uniform:
+  - ppl about 126.2
+- Interpretation:
+  - the benchmark pipeline itself looks reasonable
+  - the method ordering makes sense
+  - alpha = 1.0 appears to be very aggressive in this setup
+
+Alpha and budgeting conclusion:
+- In the current setup, alpha = 1.0 leads to a uniform target rank of about 285
+  out of 1024 for each compressed gate/up matrix.
+- This is likely too aggressive for a first strong-quality benchmark.
+- Next reruns should use milder compression settings, meaning larger alpha,
+  such as:
+  - 1.25
+  - 1.50
+  - 2.00
+
+Usability and rerun support:
+- Added tqdm progress bars to:
+  - script/1_collect_activation_rank.py
+  - script/1_collect_weight_rank.py
+- This helps for the full clean rerun.
+
+Current recommended rerun order:
+- script/1_collect_weight_rank.py
+- script/1_collect_activation_rank.py
+- script/2_merge_rank_results.py
+- script/2_plot_rank_profiles.py
+- script/3_plain_svd_baseline.py with chosen alpha values
+- script/3_activation_aware_uniform.py with chosen alpha values
+- script/3_activation_aware_layerwise.py with chosen alpha values
+- script/4_summarize_effective_size.py
+- script/4_benchmark_perplexity.py
+
+Perplexity interpretation note:
+- The current benchmark pipeline appears directionally reliable because:
+  - the base Qwen3-0.6B perplexity on validation.txt is plausible for a small model
+  - the compressed-model ordering is coherent
+  - all runs use the same tokenizer, same split, and same evaluation pipeline
+- However, very large perplexity values should be interpreted cautiously.
+- Reason:
+  - perplexity = exp(average_nll)
+  - when a compressed model is badly damaged, small changes in average NLL can
+    explode into very large perplexity differences
+- Therefore:
+  - the ranking between methods is meaningful
+  - extremely large perplexity ratios are less meaningful than the underlying
+    average NLL differences
+- For reporting, it is useful to keep both:
+  - average_nll
+  - perplexity
+- Recommended additional evaluation practice:
+  - use validation.txt for development
+  - use test.txt for final reported numbers
+  - evaluate multiple alpha values, especially milder settings than alpha = 1.0
+  - optionally add a small qualitative generation sanity check later

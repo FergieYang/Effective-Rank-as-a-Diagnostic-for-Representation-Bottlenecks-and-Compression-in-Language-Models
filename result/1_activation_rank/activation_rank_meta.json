@@ -1,8 +1,8 @@
 {
-  "created_at": "2026-04-20T16:29:43",
-  "model_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\artifact\\models\\Qwen3-0.6B",
+  "created_at": "2026-04-21T19:35:47",
+  "model_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\artifact\\models\\Qwen3-0.6B\\base",
   "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\data\\wikitext2\\train.txt",
-  "output_dir": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\result\\activation_rank",
+  "output_dir": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\result\\1_activation_rank",
   "device": "cuda",
   "torch_dtype": "auto",
   "num_layers": 28,

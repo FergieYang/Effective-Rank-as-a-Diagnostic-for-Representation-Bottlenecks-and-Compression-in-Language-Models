@@ -1,9 +1,0 @@
-{
-  "created_at": "2026-04-20T16:25:58",
-  "model_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\artifact\\models\\Qwen3-0.6B",
-  "output_dir": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\result\\weight_rank",
-  "svd_device": "cuda",
-  "num_modules": 84,
-  "module_filter": "MLP Linear weights only: gate_proj, up_proj, down_proj",
-  "definition": "effective_rank = exp(-sum_i p_i log p_i), p_i = sigma_i / sum_j sigma_j"
-}

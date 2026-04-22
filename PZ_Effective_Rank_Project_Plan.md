@@ -121,7 +121,7 @@ Define normalized spectral masses:
 $$
 p_i = \frac{\lambda_i}{\sum_j \lambda_j}
 \quad \text{or} \quad
-p_i = \frac{\sigma_i}{\sum_j \sigma_j}.
+p_i = \frac{\sigma_i^2}{\sum_j \sigma_j^2}.
 $$
 
 Then define spectral entropy:
@@ -140,6 +140,10 @@ We use:
 
 - $r_u$ for the effective rank of the representation spectrum,
 - $r_w$ for the effective rank of the weight spectrum.
+
+For this project, the main weight-spectrum definition uses squared singular
+values rather than singular values directly, because low-rank approximation
+error is governed by the tail energy $\sum_{i>k} \sigma_i^2$.
 
 ---
 

@@ -5,3 +5,4 @@ artifact/models/Qwen3-0.6B/
 **/.cache/
 __pycache__/
 *.py[cod]
+*.pt

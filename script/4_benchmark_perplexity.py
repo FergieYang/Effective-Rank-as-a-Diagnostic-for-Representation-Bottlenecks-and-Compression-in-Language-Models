@@ -4,8 +4,8 @@ This script evaluates each model on the same tokenized text file using fixed
 token windows and writes one summary table of perplexity results.
 
 Outputs:
-    result/4_benchmark/perplexity_benchmark.csv
-    result/4_benchmark/perplexity_benchmark.json
+    result/<base_model_id>/4_benchmark/perplexity_benchmark.csv
+    result/<base_model_id>/4_benchmark/perplexity_benchmark.json
 """
 
 from __future__ import annotations
@@ -19,10 +19,14 @@ from pathlib import Path
 
 from tqdm.auto import tqdm
 
-from _model_layout import DEFAULT_BASE_MODEL_DIR, base_model_id_from_base_dir, discover_model_dirs
+from _model_layout import (
+    DEFAULT_BASE_MODEL_DIR,
+    base_model_id_from_base_dir,
+    default_benchmark_output_dir,
+    discover_model_dirs,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "result" / "4_benchmark"
 DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "wikitext2" / "validation.txt"
 
 
@@ -42,9 +46,20 @@ def parse_args() -> argparse.Namespace:
         help="Optional explicit model directories. If omitted, runs are discovered under the base model directory.",
     )
     parser.add_argument("--data-path", type=Path, default=DEFAULT_DATA_PATH)
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Defaults to result/<base_model_id>/4_benchmark.",
+    )
     parser.add_argument("--max-length", type=int, default=512)
-    parser.add_argument("--batch-size", type=int, default=1)
+    parser.add_argument("--batch-size", type=int, default=2)
+    parser.add_argument(
+        "--max-windows",
+        type=int,
+        default=64,
+        help="Maximum number of evaluation windows. Windows are sampled evenly across the tokenized file.",
+    )
     parser.add_argument(
         "--recompute-existing",
         action="store_true",
@@ -88,7 +103,7 @@ def load_token_ids(data_path: Path, tokenizer) -> list[int]:
     return token_ids
 
 
-def make_windows(token_ids: list[int], max_length: int) -> list[list[int]]:
+def make_windows(token_ids: list[int], max_length: int, max_windows: int | None) -> list[list[int]]:
     windows = []
     for start in range(0, len(token_ids), max_length):
         chunk = token_ids[start : start + max_length]
@@ -96,6 +111,16 @@ def make_windows(token_ids: list[int], max_length: int) -> list[list[int]]:
             windows.append(chunk)
     if not windows:
         raise SystemExit("No valid evaluation windows were created.")
+    if max_windows is not None and max_windows > 0 and len(windows) > max_windows:
+        if max_windows == 1:
+            return [windows[0]]
+
+        last_index = len(windows) - 1
+        selected_indices = {
+            round(i * last_index / (max_windows - 1))
+            for i in range(max_windows)
+        }
+        windows = [windows[index] for index in sorted(selected_indices)]
     return windows
 
 
@@ -183,16 +208,19 @@ def benchmark_key(
     data_path: Path,
     max_length: int,
     batch_size: int,
-) -> tuple[str, str, int, int]:
-    return (str(model_dir.resolve()), str(data_path.resolve()), max_length, batch_size)
+    max_windows: int | None,
+) -> tuple[str, str, int, int, int | None]:
+    return (str(model_dir.resolve()), str(data_path.resolve()), max_length, batch_size, max_windows)
 
 
-def row_benchmark_key(row: dict[str, str]) -> tuple[str, str, int, int]:
+def row_benchmark_key(row: dict[str, str]) -> tuple[str, str, int, int, int | None]:
+    max_windows_text = row.get("max_windows", "")
     return (
         str(Path(row["model_dir"]).resolve()),
         str(Path(row["data_path"]).resolve()),
         int(row["max_length"]),
         int(row["batch_size"]),
+        int(max_windows_text) if max_windows_text not in ("", None) else None,
     )
 
 
@@ -256,6 +284,7 @@ def evaluate_model(model_dir: Path, windows: list[list[int]], args, tokenizer, d
         "num_windows": len(windows),
         "max_length": args.max_length,
         "batch_size": args.batch_size,
+        "max_windows": args.max_windows,
         "total_predicted_tokens": total_predicted_tokens,
         "average_nll": total_nll / total_predicted_tokens,
         "perplexity": perplexity,
@@ -264,6 +293,7 @@ def evaluate_model(model_dir: Path, windows: list[list[int]], args, tokenizer, d
 
 def main() -> None:
     args = parse_args()
+    args.output_dir = args.output_dir or default_benchmark_output_dir(args.base_model_dir)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
@@ -291,7 +321,7 @@ def main() -> None:
         tokenizer.pad_token = tokenizer.eos_token
 
     token_ids = load_token_ids(args.data_path, tokenizer)
-    windows = make_windows(token_ids, args.max_length)
+    windows = make_windows(token_ids, args.max_length, args.max_windows)
 
     output_csv = args.output_dir / "perplexity_benchmark.csv"
     existing_rows = [] if args.recompute_existing else load_existing_rows(output_csv)
@@ -307,6 +337,7 @@ def main() -> None:
             data_path=args.data_path,
             max_length=args.max_length,
             batch_size=args.batch_size,
+            max_windows=args.max_windows,
         )
         if key in existing_by_key and not args.recompute_existing:
             rows.append(existing_by_key[key])
@@ -336,6 +367,7 @@ def main() -> None:
                 "data_path": str(args.data_path),
                 "device": device,
                 "tokenizer_path": str(tokenizer_path),
+                "max_windows": args.max_windows,
                 "output_csv": str(output_csv),
                 "recompute_existing": args.recompute_existing,
                 "skipped_existing_rows": skipped_count,

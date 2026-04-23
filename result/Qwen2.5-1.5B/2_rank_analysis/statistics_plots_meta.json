@@ -1,0 +1,37 @@
+{
+  "created_at": "2026-04-22T19:53:17",
+  "statistics_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\result\\Qwen2.5-1.5B\\1_statistics\\layer_statistics.csv",
+  "output_dir": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\result\\Qwen2.5-1.5B\\2_rank_analysis",
+  "plots": [
+    "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\result\\Qwen2.5-1.5B\\2_rank_analysis\\statistics_profile.png",
+    "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\result\\Qwen2.5-1.5B\\2_rank_analysis\\statistics_profile.svg"
+  ],
+  "top_output_trace_layers": [
+    {
+      "layer_index": 26,
+      "mlp_output_uncentered_trace": 251070.80407714844,
+      "mlp_input_effective_rank_ratio": 0.32290199197735964
+    },
+    {
+      "layer_index": 2,
+      "mlp_output_uncentered_trace": 66234.17065429688,
+      "mlp_input_effective_rank_ratio": 0.2076151780534794
+    },
+    {
+      "layer_index": 1,
+      "mlp_output_uncentered_trace": 51634.616271972656,
+      "mlp_input_effective_rank_ratio": 0.19663063320912297
+    },
+    {
+      "layer_index": 27,
+      "mlp_output_uncentered_trace": 50642.722106933594,
+      "mlp_input_effective_rank_ratio": 0.22899203124809606
+    },
+    {
+      "layer_index": 25,
+      "mlp_output_uncentered_trace": 4596.979732513428,
+      "mlp_input_effective_rank_ratio": 0.34873003300438254
+    }
+  ],
+  "trace_note": "The combined figure overlays normalized log MLP output trace on the main normalized-statistic axis and also shows the raw MLP output trace on a secondary log-scaled axis."
+}

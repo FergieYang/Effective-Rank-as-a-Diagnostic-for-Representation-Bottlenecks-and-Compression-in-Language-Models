@@ -1,0 +1,17 @@
+{
+  "created_at": "2026-04-22T19:45:11",
+  "model_path": "artifact\\models\\Qwen2.5-1.5B\\base",
+  "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\data\\wikitext2\\train.txt",
+  "output_dir": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\result\\Qwen2.5-1.5B\\1_statistics",
+  "device": "cuda",
+  "torch_dtype": "auto",
+  "num_layers": 28,
+  "max_length": 512,
+  "batch_size": 1,
+  "max_token_samples": 65536,
+  "num_windows": 128,
+  "activation_definition": "MLP input effective rank uses centered covariance eigenvalues collected at post_attention_layernorm output. MLP input second-moment statistics are retained as diagnostics.",
+  "weight_definition": "MLP weight effective rank uses squared singular values with p_i = sigma_i^2 / sum_j sigma_j^2.",
+  "mlp_output_trace_definition": "MLP output uncentered trace is E[||delta||^2] where delta is the output of layer.mlp before residual addition.",
+  "columns_note": "layer_statistics.csv merges the old stage-1 activation-rank and weight-rank information into one per-layer table and adds mlp_output_uncentered_trace."
+}

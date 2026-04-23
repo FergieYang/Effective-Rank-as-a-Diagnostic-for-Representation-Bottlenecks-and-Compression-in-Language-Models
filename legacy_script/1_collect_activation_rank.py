@@ -6,9 +6,9 @@ input. It avoids saving raw activations and only writes spectra plus summary
 rows.
 
 Outputs:
-    result/1_activation_rank/activation_rank.csv
-    result/1_activation_rank/activation_rank_meta.json
-    result/1_activation_rank/activation_eigenvalues.pt
+    result/<base_model_id>/1_activation_rank/activation_rank.csv
+    result/<base_model_id>/1_activation_rank/activation_rank_meta.json
+    result/<base_model_id>/1_activation_rank/activation_eigenvalues.pt
 """
 
 from __future__ import annotations
@@ -19,20 +19,24 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from _model_layout import DEFAULT_BASE_MODEL_DIR
+from _model_layout import DEFAULT_BASE_MODEL_DIR, default_activation_rank_output_dir
 from tqdm.auto import tqdm
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MODEL_PATH = DEFAULT_BASE_MODEL_DIR
 DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "wikitext2" / "train.txt"
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "result" / "1_activation_rank"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Compute MLP-input activation effective rank.")
     parser.add_argument("--model-path", type=Path, default=DEFAULT_MODEL_PATH)
     parser.add_argument("--data-path", type=Path, default=DEFAULT_DATA_PATH)
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Defaults to result/<base_model_id>/1_activation_rank.",
+    )
     parser.add_argument("--max-length", type=int, default=512)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument(
@@ -127,6 +131,7 @@ def make_batches(windows, batch_size: int, torch):
 
 def main() -> None:
     args = parse_args()
+    args.output_dir = args.output_dir or default_activation_rank_output_dir(args.model_path)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     try:

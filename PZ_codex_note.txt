@@ -252,7 +252,6 @@ Compression design decisions locked in:
   - mlp.up_proj
 - Do not compress:
   - mlp.down_proj
-  - final transformer layer
 - Reason:
   - the collected activation statistic is the true MLP input for gate_proj and up_proj
   - it is only a proxy for down_proj
@@ -407,3 +406,170 @@ Perplexity interpretation note:
   - use test.txt for final reported numbers
   - evaluate multiple alpha values, especially milder settings than alpha = 1.0
   - optionally add a small qualitative generation sanity check later
+
+
+Session note - 2026-04-22
+
+Updated activation-statistic interpretation:
+- After discussion, we now treat two activation quantities as the main ones to
+  care about:
+  - centered effective rank
+  - uncentered trace
+- Interpretation:
+  - centered effective rank is the main structure / dimensionality signal
+  - uncentered trace is the main energy / importance signal
+- This gives a cleaner division of labor:
+  - centered covariance tells us how many directions of meaningful variation
+    the layer input uses
+  - uncentered second-moment trace tells us how much total signal energy passes
+    through the layer and therefore how costly approximation error may be
+- Working project framing going forward:
+  - effective rank alone should not be treated as the only layerwise signal
+  - trace contains important complementary information
+  - later compression-policy updates should likely use both signals rather than
+    rank alone
+- Important status note:
+  - this is a design decision and interpretation update
+  - the existing pipeline is not yet fully adapted to use trace as a first-
+    class compression-allocation signal everywhere
+  - we plan to adapt the workflow later
+
+
+Decision update - 2026-04-22
+
+Main diagnosis statistics for the next workflow revision:
+- After further discussion, the two main diagnosis quantities are now:
+  - MLP input centered effective rank
+  - MLP output uncentered trace
+- Intended interpretation:
+  - MLP input centered effective rank is the intrinsic-dimensionality signal
+  - MLP output uncentered trace is the residual-write importance signal
+- Compression-allocation principle going forward:
+  - allocation should respect both intrinsic dimensionality and importance
+  - rank alone should not determine the layerwise allocation rule
+- Important experimental scope decision:
+  - for the main compression experiments, we still compress only:
+    - mlp.gate_proj
+    - mlp.up_proj
+  - we do not expand the main intervention to mlp.down_proj yet
+  - rationale:
+    - the residual-write importance story conceptually includes the full MLP
+      branch
+    - but the current main compression setup remains cleaner and more justified
+      if the intervention is still restricted to gate_proj and up_proj
+
+Candidate allocation formula to test next:
+- For each layer, start from its MLP input centered effective rank as the base
+  target rank.
+- Then scale that base rank by:
+  - a global compression strength alpha
+  - a trace-based protection factor derived from the layer's MLP output
+    uncentered trace before residual addition
+- Trace-based protection-factor definition:
+  - take the logarithm of each layer's MLP output uncentered trace
+  - normalize those log-trace values across layers to the interval [0, 1]
+  - call the normalized value w for each layer
+  - convert w into a softened protection weight using beta:
+    - trace_weight = beta + (1 - beta) * w
+- Proposed plain-language rule:
+  - each layer's target rank equals:
+    - centered_input_effective_rank
+    - times alpha
+    - times trace_weight
+- Interpretation:
+  - centered effective rank determines the layer's natural rank budget
+  - normalized log output trace determines how much of that budget the layer
+    should keep
+  - alpha controls the overall compression level
+  - beta controls the minimum fraction of rank every layer retains
+- Intended qualitative behavior:
+  - higher-output-trace layers keep more rank
+  - lower-output-trace layers keep less rank
+  - beta prevents the allocation from becoming too small in weak-output layers
+- Important implementation note:
+  - for fair comparison against uniform, the final integer layer ranks should
+    still be adjusted to match the exact total rank budget of the uniform
+    baseline
+
+
+Session progress summary - 2026-04-22 end of day
+
+Pipeline-overhaul progress completed today:
+- We started the workflow overhaul to reflect the new main diagnosis
+  quantities:
+  - MLP input centered effective rank
+  - MLP output uncentered trace
+- Stage 1 is now being migrated from two separate scripts into one combined
+  statistics collector:
+  - new script:
+    - script/1_collect_statistics.py
+  - this script collects in one run:
+    - MLP input activation-rank statistics
+    - MLP weight-rank statistics
+    - MLP output uncentered trace before residual addition
+  - current outputs:
+    - result/<base_model_id>/1_statistics/layer_statistics.csv
+    - result/<base_model_id>/1_statistics/activation_eigenvalues.pt
+    - result/<base_model_id>/1_statistics/weight_singular_values.pt
+    - result/<base_model_id>/1_statistics/statistics_meta.json
+- The old stage-1 scripts were left in place for reference during the
+  transition:
+  - script/1_collect_activation_rank.py
+  - script/1_collect_weight_rank.py
+- Stage 2 was simplified accordingly:
+  - the old merge step is no longer part of the intended main workflow
+  - new plotting script:
+    - script/2_plot_statistics.py
+  - this script reads:
+    - result/<base_model_id>/1_statistics/layer_statistics.csv
+  - it now produces one combined figure instead of separate rank and trace
+    figures
+  - current outputs:
+    - result/<base_model_id>/2_rank_analysis/statistics_profile.png
+    - result/<base_model_id>/2_rank_analysis/statistics_profile.svg
+    - result/<base_model_id>/2_rank_analysis/statistics_plots_meta.json
+- The combined stage-2 plot overlays:
+  - MLP input centered effective-rank ratio
+  - MLP input second-moment effective-rank ratio
+  - gate_proj / up_proj / down_proj weight effective-rank ratios
+  - average MLP weight effective-rank ratio
+  - normalized log MLP output trace
+  - plus raw MLP output trace on a secondary log-scaled axis
+
+Current compression-side status:
+- We previously made first-layer skipping the default for stage-3 compression
+  scripts, but that policy is now superseded.
+- The main compression intervention is still:
+  - mlp.gate_proj
+  - mlp.up_proj
+- The new candidate allocation formula based on:
+  - centered input effective rank
+  - normalized log output trace
+  - alpha
+  - beta
+  has been written down conceptually, but has not been implemented yet.
+
+Important next-step note:
+- The rest of the pipeline is not yet fully adapted to the new stage-1/stage-2
+  format.
+- In particular, later scripts still need to be updated to consume the new
+  combined statistics outputs cleanly.
+
+
+Correction note - 2026-04-22
+
+Layer-skipping policy update after introducing trace-aware importance:
+- After further discussion, we decided that stage-3 compression experiments
+  should no longer skip any transformer layer by default.
+- Reason:
+  - now that MLP output uncentered trace is part of the diagnosis story, we do
+    not want to hard-code a prior assumption that the first or final layer must
+    always be protected from compression
+  - instead, every layer should remain eligible for compression, and any
+    protection should come from the allocation rule itself
+- Current intended default behavior:
+  - compress gate_proj and up_proj in all transformer layers
+  - do not skip the first layer by default
+  - do not skip the final layer by default
+- The optional skip-first-layer flag may still remain available for ablations,
+  but it is no longer the main policy.

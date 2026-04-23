@@ -10,13 +10,20 @@ from pathlib import Path
 
 from tqdm.auto import tqdm
 
-from _model_layout import DEFAULT_BASE_MODEL_DIR, alpha_tag, base_model_id_from_base_dir, resolve_compression_output_dir
+from _model_layout import (
+    DEFAULT_BASE_MODEL_DIR,
+    alpha_tag,
+    base_model_id_from_base_dir,
+    default_activation_rank_csv,
+    default_activation_second_moment_cache,
+    resolve_compression_output_dir,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MODEL_PATH = DEFAULT_BASE_MODEL_DIR
-DEFAULT_ACTIVATION_RANK_CSV = PROJECT_ROOT / "result" / "1_activation_rank" / "activation_rank.csv"
 DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "wikitext2" / "train.txt"
-DEFAULT_CACHE_PATH = PROJECT_ROOT / "result" / "1_activation_rank" / "activation_second_moments_gate_up.pt"
+DEFAULT_ACTIVATION_RANK_CSV = default_activation_rank_csv(DEFAULT_MODEL_PATH)
+DEFAULT_CACHE_PATH = default_activation_second_moment_cache(DEFAULT_MODEL_PATH)
 
 TARGET_MODULE_NAMES = ["mlp.gate_proj", "mlp.up_proj"]
 
@@ -73,10 +80,19 @@ def load_activation_rank_rows(csv_path: Path) -> dict[int, dict[str, str]]:
     return by_layer
 
 
-def compressed_layer_indices(num_layers: int) -> list[int]:
-    if num_layers < 2:
-        raise SystemExit("Expected at least 2 layers so the final layer can be skipped.")
-    return list(range(num_layers - 1))
+def compressed_layer_indices(
+    num_layers: int,
+    *,
+    skip_first_layer: bool = False,
+    skip_final_layer: bool = False,
+) -> list[int]:
+    start_index = 1 if skip_first_layer else 0
+    end_index = num_layers - 1 if skip_final_layer else num_layers
+    if end_index <= start_index:
+        raise SystemExit(
+            "No layers remain to compress after applying the requested first/final-layer skipping policy."
+        )
+    return list(range(start_index, end_index))
 
 
 def load_token_windows(data_path: Path, tokenizer, max_length: int, max_tokens: int, torch):

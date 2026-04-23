@@ -1,8 +1,8 @@
 """Merge activation-rank and weight-rank results into one layerwise table.
 
 Outputs:
-    result/2_rank_analysis/merged_rank_results.csv
-    result/2_rank_analysis/merged_rank_results_meta.json
+    result/<base_model_id>/2_rank_analysis/merged_rank_results.csv
+    result/<base_model_id>/2_rank_analysis/merged_rank_results_meta.json
 """
 
 from __future__ import annotations
@@ -13,20 +13,37 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_ACTIVATION_RANK_CSV = PROJECT_ROOT / "result" / "1_activation_rank" / "activation_rank.csv"
-DEFAULT_WEIGHT_RANK_CSV = PROJECT_ROOT / "result" / "1_weight_rank" / "weight_rank.csv"
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "result" / "2_rank_analysis"
+from _model_layout import (
+    DEFAULT_BASE_MODEL_DIR,
+    default_activation_rank_csv,
+    default_rank_analysis_output_dir,
+    default_weight_rank_csv,
+)
 
 MLP_BLOCK_NAMES = ["mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"]
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Merge activation and weight rank results.")
-    parser.add_argument("--activation-rank-csv", type=Path, default=DEFAULT_ACTIVATION_RANK_CSV)
-    parser.add_argument("--weight-rank-csv", type=Path, default=DEFAULT_WEIGHT_RANK_CSV)
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--base-model-dir", type=Path, default=DEFAULT_BASE_MODEL_DIR)
+    parser.add_argument(
+        "--activation-rank-csv",
+        type=Path,
+        default=None,
+        help="Defaults to result/<base_model_id>/1_activation_rank/activation_rank.csv.",
+    )
+    parser.add_argument(
+        "--weight-rank-csv",
+        type=Path,
+        default=None,
+        help="Defaults to result/<base_model_id>/1_weight_rank/weight_rank.csv.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Defaults to result/<base_model_id>/2_rank_analysis.",
+    )
     return parser.parse_args()
 
 
@@ -72,6 +89,9 @@ def mean(values: list[float]) -> float:
 
 def main() -> None:
     args = parse_args()
+    args.activation_rank_csv = args.activation_rank_csv or default_activation_rank_csv(args.base_model_dir)
+    args.weight_rank_csv = args.weight_rank_csv or default_weight_rank_csv(args.base_model_dir)
+    args.output_dir = args.output_dir or default_rank_analysis_output_dir(args.base_model_dir)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     activation_by_layer = load_activation_rows(args.activation_rank_csv)

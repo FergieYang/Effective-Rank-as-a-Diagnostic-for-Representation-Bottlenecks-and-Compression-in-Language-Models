@@ -9,16 +9,20 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from _model_layout import DEFAULT_BASE_MODEL_DIR
+from _model_layout import base_model_dir_from_model_id
 
 DEFAULT_MODEL_ID = "Qwen/Qwen3-0.6B"
-DEFAULT_OUTPUT_DIR = DEFAULT_BASE_MODEL_DIR
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Download a Hugging Face model.")
     parser.add_argument("--model-id", default=DEFAULT_MODEL_ID)
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Defaults to artifact/models/<base_model_id>/base based on --model-id.",
+    )
     parser.add_argument(
         "--revision",
         default=None,
@@ -29,6 +33,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    args.output_dir = args.output_dir or base_model_dir_from_model_id(args.model_id)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     try:

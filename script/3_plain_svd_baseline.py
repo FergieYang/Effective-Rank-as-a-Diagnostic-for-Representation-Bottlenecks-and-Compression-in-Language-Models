@@ -1,9 +1,9 @@
 """Uniform plain-SVD compression baseline for MLP gate/up weights.
 
-This script compresses only `mlp.gate_proj` and `mlp.up_proj` in every
-transformer layer except the final layer. The target rank is uniform across
-layers and is derived from the mean centered activation effective rank, scaled
-by `alpha`.
+This script compresses only `mlp.gate_proj` and `mlp.up_proj` in each selected
+transformer layer. By default, it compresses every transformer layer.
+The target rank is uniform across layers and is derived from the mean centered
+activation effective rank, scaled by `alpha`.
 
 Outputs:
     artifact/models/<base_model_id>/plain_svd_uniform/<alpha_tag>/
@@ -22,7 +22,6 @@ from pathlib import Path
 from tqdm.auto import tqdm
 
 from _3_compression_common import (
-    DEFAULT_ACTIVATION_RANK_CSV,
     DEFAULT_MODEL_PATH,
     TARGET_MODULE_NAMES,
     alpha_tag,
@@ -40,6 +39,7 @@ from _3_compression_common import (
     uniform_rank_budget,
     write_json,
 )
+from _model_layout import default_activation_rank_csv
 
 
 METHOD_ID = "plain_svd_uniform"
@@ -48,9 +48,20 @@ METHOD_ID = "plain_svd_uniform"
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Plain-SVD low-rank baseline for MLP gate/up weights.")
     parser.add_argument("--model-path", type=Path, default=DEFAULT_MODEL_PATH)
-    parser.add_argument("--activation-rank-csv", type=Path, default=DEFAULT_ACTIVATION_RANK_CSV)
+    parser.add_argument(
+        "--activation-rank-csv",
+        type=Path,
+        default=None,
+        help="Defaults to result/<base_model_id>/1_activation_rank/activation_rank.csv.",
+    )
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--alpha", type=float, default=1.5)
+    parser.add_argument(
+        "--skip-first-layer",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Skip compressing the first transformer layer. Disabled by default.",
+    )
     parser.add_argument(
         "--rounding",
         default="round",
@@ -74,6 +85,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    args.activation_rank_csv = args.activation_rank_csv or default_activation_rank_csv(args.model_path)
     args.output_dir = resolve_compression_output_dir(
         base_model_dir=args.model_path,
         method_id=METHOD_ID,
@@ -106,7 +118,7 @@ def main() -> None:
     model.eval()
 
     layers = get_transformer_layers(model)
-    layer_indices = compressed_layer_indices(len(layers))
+    layer_indices = compressed_layer_indices(len(layers), skip_first_layer=args.skip_first_layer)
     max_rank = int(layers[0].mlp.gate_proj.weight.shape[1])
     budget = uniform_rank_budget(
         activation_rows=activation_rows,
@@ -189,11 +201,13 @@ def main() -> None:
             "alpha": args.alpha,
             "alpha_tag": alpha_tag(args.alpha),
             "rounding": args.rounding,
+            "skip_first_layer": args.skip_first_layer,
             "compressed_layer_indices": layer_indices,
-            "skipped_final_layer_index": len(layers) - 1,
+            "skipped_first_layer_index": 0 if args.skip_first_layer else None,
+            "skipped_final_layer_index": None,
             "compressed_modules": TARGET_MODULE_NAMES,
             "compression_method": "Plain truncated SVD with one uniform rank for all compressed layers.",
-            "rank_budget_rule": "Uniform rank = rounded(alpha * mean centered activation effective rank) over non-final layers.",
+            "rank_budget_rule": "Uniform rank = rounded(alpha * mean centered activation effective rank) over all compressed layers.",
             "uniform_rank": uniform_rank,
             "total_rank_budget_per_module": uniform_rank * len(layer_indices),
             "total_original_params_targeted": total_original_params,

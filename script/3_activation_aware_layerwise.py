@@ -1,10 +1,11 @@
 """Layer-varying activation-aware compression for MLP gate/up weights.
 
-This script compresses only `mlp.gate_proj` and `mlp.up_proj` in every
-transformer layer except the final layer. The within-layer objective is
-activation-aware, and the target rank for each layer comes from the centered
-activation effective rank scaled by `alpha`. Integer layer ranks are adjusted
-to match the exact total budget of the uniform baseline.
+This script compresses only `mlp.gate_proj` and `mlp.up_proj` in each selected
+transformer layer. By default, it compresses every transformer layer.
+The within-layer objective is activation-aware, and the target rank for each
+layer comes from the centered activation effective rank scaled by `alpha`.
+Integer layer ranks are adjusted to match the exact total budget of the uniform
+baseline.
 
 Outputs:
     artifact/models/<base_model_id>/activation_aware_layerwise/<alpha_tag>/
@@ -23,8 +24,6 @@ from pathlib import Path
 from tqdm.auto import tqdm
 
 from _3_compression_common import (
-    DEFAULT_ACTIVATION_RANK_CSV,
-    DEFAULT_CACHE_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_MODEL_PATH,
     TARGET_MODULE_NAMES,
@@ -45,6 +44,7 @@ from _3_compression_common import (
     uniform_rank_budget,
     write_json,
 )
+from _model_layout import default_activation_rank_csv, default_activation_second_moment_cache
 
 
 METHOD_ID = "activation_aware_layerwise"
@@ -55,11 +55,27 @@ def parse_args() -> argparse.Namespace:
         description="Activation-aware layer-varying low-rank compression for MLP gate/up weights."
     )
     parser.add_argument("--model-path", type=Path, default=DEFAULT_MODEL_PATH)
-    parser.add_argument("--activation-rank-csv", type=Path, default=DEFAULT_ACTIVATION_RANK_CSV)
+    parser.add_argument(
+        "--activation-rank-csv",
+        type=Path,
+        default=None,
+        help="Defaults to result/<base_model_id>/1_activation_rank/activation_rank.csv.",
+    )
     parser.add_argument("--data-path", type=Path, default=DEFAULT_DATA_PATH)
-    parser.add_argument("--second-moment-cache", type=Path, default=DEFAULT_CACHE_PATH)
+    parser.add_argument(
+        "--second-moment-cache",
+        type=Path,
+        default=None,
+        help="Defaults to result/<base_model_id>/1_activation_rank/activation_second_moments_gate_up.pt.",
+    )
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--alpha", type=float, default=1.5)
+    parser.add_argument(
+        "--skip-first-layer",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Skip compressing the first transformer layer. Disabled by default.",
+    )
     parser.add_argument(
         "--rounding",
         default="round",
@@ -97,6 +113,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    args.activation_rank_csv = args.activation_rank_csv or default_activation_rank_csv(args.model_path)
+    args.second_moment_cache = args.second_moment_cache or default_activation_second_moment_cache(args.model_path)
     args.output_dir = resolve_compression_output_dir(
         base_model_dir=args.model_path,
         method_id=METHOD_ID,
@@ -117,7 +135,7 @@ def main() -> None:
     device = choose_device(args.device, torch)
     activation_rows = load_activation_rank_rows(args.activation_rank_csv)
 
-    layer_indices = compressed_layer_indices(len(activation_rows))
+    layer_indices = compressed_layer_indices(len(activation_rows), skip_first_layer=args.skip_first_layer)
     max_rank = int(float(next(iter(activation_rows.values()))["hidden_size"]))
     uniform_budget = uniform_rank_budget(
         activation_rows=activation_rows,
@@ -245,8 +263,10 @@ def main() -> None:
             "max_length": args.max_length,
             "batch_size": args.batch_size,
             "max_token_samples": args.max_token_samples,
+            "skip_first_layer": args.skip_first_layer,
             "compressed_layer_indices": layer_indices,
-            "skipped_final_layer_index": len(layers) - 1,
+            "skipped_first_layer_index": 0 if args.skip_first_layer else None,
+            "skipped_final_layer_index": None,
             "compressed_modules": TARGET_MODULE_NAMES,
             "compression_method": "Activation-aware low-rank approximation minimizing E|| (W - W_hat) u ||^2 under the uncentered second moment E[u u^T], with layer-varying target ranks.",
             "rank_budget_rule": "Layerwise ranks follow alpha * centered activation effective rank, then are integer-adjusted to match the exact total rank budget of the uniform baseline.",

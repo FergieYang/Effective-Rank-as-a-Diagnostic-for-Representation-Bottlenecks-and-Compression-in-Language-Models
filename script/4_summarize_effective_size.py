@@ -5,8 +5,8 @@ and metadata, compares them against the base dense model, and writes a compact
 benchmark table.
 
 Outputs:
-    result/4_benchmark/effective_size_summary.csv
-    result/4_benchmark/effective_size_summary.json
+    result/<base_model_id>/4_benchmark/effective_size_summary.csv
+    result/<base_model_id>/4_benchmark/effective_size_summary.json
 """
 
 from __future__ import annotations
@@ -17,10 +17,12 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from _model_layout import DEFAULT_BASE_MODEL_DIR, base_model_id_from_base_dir, discover_model_dirs
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "result" / "4_benchmark"
+from _model_layout import (
+    DEFAULT_BASE_MODEL_DIR,
+    base_model_id_from_base_dir,
+    default_benchmark_output_dir,
+    discover_model_dirs,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -38,7 +40,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional explicit model directories. If omitted, runs are discovered under the base model directory.",
     )
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Defaults to result/<base_model_id>/4_benchmark.",
+    )
     return parser.parse_args()
 
 
@@ -215,6 +222,7 @@ def summarize_compressed_model(model_dir: Path) -> dict[str, object]:
 
 def main() -> None:
     args = parse_args()
+    args.output_dir = args.output_dir or default_benchmark_output_dir(args.base_model_dir)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     model_dirs = args.model_dirs or discover_model_dirs(args.base_model_dir)

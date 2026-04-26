@@ -66,6 +66,25 @@ def to_int_list(rows: list[dict[str, str]], key: str) -> list[int]:
     return [int(row[key]) for row in rows]
 
 
+def output_to_residual_trace_ratio_list(rows: list[dict[str, str]]) -> list[float]:
+    if "mlp_output_to_residual_trace_ratio" in rows[0]:
+        return [float(row["mlp_output_to_residual_trace_ratio"]) for row in rows]
+    if "mlp_output_to_input_trace_ratio" in rows[0]:
+        return [float(row["mlp_output_to_input_trace_ratio"]) for row in rows]
+    return [
+        float(row["mlp_output_uncentered_trace"]) / float(row["mlp_residual_second_moment_trace"])
+        for row in rows
+    ]
+
+
+def relative_trace_ratio_from_row(row: dict[str, str]) -> float:
+    if "mlp_output_to_residual_trace_ratio" in row:
+        return float(row["mlp_output_to_residual_trace_ratio"])
+    if "mlp_output_to_input_trace_ratio" in row:
+        return float(row["mlp_output_to_input_trace_ratio"])
+    return float(row["mlp_output_uncentered_trace"]) / float(row["mlp_residual_second_moment_trace"])
+
+
 def normalize_log_values(values: list[float]) -> list[float]:
     if not values:
         return []
@@ -101,7 +120,9 @@ def main() -> None:
     down_ratio = to_float_list(rows, "down_proj_weight_effective_rank_ratio")
     average_weight_ratio = to_float_list(rows, "average_mlp_weight_effective_rank_ratio")
     output_trace = to_float_list(rows, "mlp_output_uncentered_trace")
+    output_to_residual_trace_ratios = output_to_residual_trace_ratio_list(rows)
     normalized_log_output_trace = normalize_log_values(output_trace)
+    normalized_log_output_to_residual_trace_ratio = normalize_log_values(output_to_residual_trace_ratios)
 
     plt.style.use("seaborn-v0_8-whitegrid")
 
@@ -142,6 +163,15 @@ def main() -> None:
         color="#b91c1c",
         label="MLP output normalized log trace",
     )
+    ax.plot(
+        layers,
+        normalized_log_output_to_residual_trace_ratio,
+        marker="o",
+        linewidth=2.2,
+        linestyle=":",
+        color="#be185d",
+        label="MLP output/residual normalized log trace ratio",
+    )
     ax.set_title("Layerwise MLP Statistics")
     ax.set_xlabel("Layer Index")
     ax.set_ylabel("Normalized Statistic")
@@ -172,6 +202,7 @@ def main() -> None:
     plt.close(fig)
 
     top_trace_rows = sorted(rows, key=lambda row: float(row["mlp_output_uncentered_trace"]), reverse=True)[:5]
+    top_relative_trace_rows = sorted(rows, key=relative_trace_ratio_from_row, reverse=True)[:5]
     metadata = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "statistics_csv": str(args.statistics_csv),
@@ -188,7 +219,19 @@ def main() -> None:
             }
             for row in top_trace_rows
         ],
-        "trace_note": "The combined figure overlays normalized log MLP output trace on the main normalized-statistic axis and also shows the raw MLP output trace on a secondary log-scaled axis.",
+        "top_relative_output_trace_layers": [
+            {
+                "layer_index": int(row["layer_index"]),
+                "mlp_output_to_residual_trace_ratio": relative_trace_ratio_from_row(row),
+                "mlp_output_uncentered_trace": float(row["mlp_output_uncentered_trace"]),
+            }
+            for row in top_relative_trace_rows
+        ],
+        "trace_note": (
+            "The combined figure overlays normalized log MLP output trace and normalized log "
+            "MLP output/residual trace ratio on the main normalized-statistic axis and also "
+            "shows the raw MLP output trace on a secondary log-scaled axis."
+        ),
     }
     meta_path = args.output_dir / "statistics_plots_meta.json"
     meta_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")

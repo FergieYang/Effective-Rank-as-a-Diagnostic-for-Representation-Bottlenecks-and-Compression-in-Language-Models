@@ -2,6 +2,9 @@
 
 Default target:
     Qwen/Qwen3-0.6B -> artifact/models/Qwen3-0.6B/base
+
+Example third model:
+    HuggingFaceTB/SmolLM2-1.7B -> artifact/models/SmolLM2-1.7B/base
 """
 
 from __future__ import annotations
@@ -28,6 +31,16 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional Hugging Face revision, branch, tag, or commit hash.",
     )
+    parser.add_argument(
+        "--token",
+        default=None,
+        help="Optional Hugging Face token. If omitted, huggingface_hub uses the logged-in/env token.",
+    )
+    parser.add_argument(
+        "--allow-original-files",
+        action="store_true",
+        help="Also download files under original/. By default these are skipped when present.",
+    )
     return parser.parse_args()
 
 
@@ -44,10 +57,13 @@ def main() -> None:
             "  pip install huggingface_hub"
         ) from exc
 
+    ignore_patterns = None if args.allow_original_files else ["original/*"]
     model_path = snapshot_download(
         repo_id=args.model_id,
         revision=args.revision,
         local_dir=args.output_dir,
+        token=args.token,
+        ignore_patterns=ignore_patterns,
     )
 
     print(f"Downloaded {args.model_id}")

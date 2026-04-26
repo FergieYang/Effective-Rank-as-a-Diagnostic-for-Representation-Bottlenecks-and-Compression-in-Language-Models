@@ -168,6 +168,10 @@ def summarize_base_model(model_dir: Path, reference_original_params: int | None)
         "compression_method": "base_dense",
         "alpha": None,
         "alpha_tag": None,
+        "target_factorized_param_ratio": None,
+        "beta": None,
+        "beta_tag": None,
+        "rank_budget_tag": None,
         "targeted_original_params": targeted_original_params,
         "targeted_effective_factorized_params": targeted_original_params,
         "targeted_factorized_param_ratio": 1.0 if targeted_original_params else None,
@@ -206,6 +210,10 @@ def summarize_compressed_model(model_dir: Path) -> dict[str, object]:
         "compression_method": meta.get("compression_method"),
         "alpha": meta.get("alpha"),
         "alpha_tag": meta.get("alpha_tag"),
+        "target_factorized_param_ratio": meta.get("target_factorized_param_ratio", meta.get("alpha")),
+        "beta": meta.get("beta"),
+        "beta_tag": meta.get("beta_tag"),
+        "rank_budget_tag": meta.get("rank_budget_tag"),
         "targeted_original_params": targeted_original_params,
         "targeted_effective_factorized_params": targeted_factorized_params,
         "targeted_factorized_param_ratio": (
@@ -252,9 +260,19 @@ def main() -> None:
                 row["targeted_factorized_param_ratio"] = 1.0
 
     def sort_key(row: dict[str, object]):
-        alpha = row["alpha"]
+        alpha = row.get("alpha")
+        beta = row.get("beta")
         alpha_value = float(alpha) if alpha is not None else -1.0
-        return (str(row["base_model_id"]), str(row["method_id"]), alpha_value, str(row["model_dir"]))
+        beta_value = float(beta) if beta is not None else -1.0
+        budget_tag = row.get("rank_budget_tag") or row.get("alpha_tag") or ""
+        return (
+            str(row["base_model_id"]),
+            str(row["method_id"]),
+            alpha_value,
+            beta_value,
+            str(budget_tag),
+            str(row["model_dir"]),
+        )
 
     rows = sorted(rows, key=sort_key)
 

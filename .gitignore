@@ -1,5 +1,7 @@
-# Downloaded Qwen model artifacts
-artifact/models/Qwen3-0.6B/
+# Downloaded model artifacts
+artifact/models/
+
+*.pt
 
 # Local caches
 **/.cache/

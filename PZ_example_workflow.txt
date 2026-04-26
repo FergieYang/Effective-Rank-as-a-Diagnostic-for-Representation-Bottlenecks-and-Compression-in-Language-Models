@@ -1,4 +1,7 @@
 python script/0_download_model.py --model-id Qwen/Qwen2.5-1.5B
+
+python script/0_download_model.py --model-id HuggingFaceTB/SmolLM2-1.7B
+
 python script/1_collect_weight_rank.py --model-path artifact/models/Qwen2.5-1.5B/base
 python script/1_collect_activation_rank.py --model-path artifact/models/Qwen2.5-1.5B/base
 python script/2_merge_rank_results.py --base-model-dir artifact/models/Qwen2.5-1.5B/base
@@ -36,14 +39,55 @@ python script/5_plot_meta_analysis.py
 #new
 
 
-python script/1_collect_statistics.py --model-path artifact/models/Qwen2.5-1.5B/base
-
 python script/1_collect_statistics.py --model-path artifact/models/Qwen3-0.6B/base
 
+python script/1_collect_statistics.py --model-path artifact/models/Qwen2.5-1.5B/base
+
+python script/1_collect_statistics.py --model-path artifact/models/SmolLM2-1.7B/base
+
+
+python script/2_plot_statistics.py --base-model-dir artifact/models/Qwen3-0.6B/base
 
 python script/2_plot_statistics.py --base-model-dir artifact/models/Qwen2.5-1.5B/base
 
-python script/2_plot_statistics.py --base-model-dir artifact/models/Qwen3-0.6B/base
+python script/2_plot_statistics.py --base-model-dir artifact/models/SmolLM2-1.7B/base
+
+
+
+python script/3_compute_rank_budgets.py --base-model-dir artifact/models/Qwen3-0.6B/base --alpha 0.8 --trace-mix 0.7 --uniform-shrink 0.5
+
+python script/3_compute_rank_budgets.py --base-model-dir artifact/models/Qwen2.5-1.5B/base --alpha 0.8 --trace-mix 0.5 --uniform-shrink 0.25
+
+python script/3_compute_rank_budgets.py --base-model-dir artifact/models/SmolLM2-1.7B/base --alpha 0.8 --trace-mix 0.5 --uniform-shrink 0.25
+
+
+
+python script/3_compress_models.py --base-model-dir artifact/models/Qwen3-0.6B/base --alpha 0.8 --trace-mix 0.7 --uniform-shrink 0.5
+
+python script/3_compress_models.py --base-model-dir artifact/models/Qwen2.5-1.5B/base --alpha 0.8 --trace-mix 0.5 --uniform-shrink 0.25
+
+python script/3_compress_models.py --base-model-dir artifact/models/SmolLM2-1.7B/base --alpha 0.8 --trace-mix 0.5 --uniform-shrink 0.25
+
+
+
+python script/4_benchmark_perplexity.py --base-model-dir artifact/models/Qwen3-0.6B/base
+
+python script/4_benchmark_perplexity.py --base-model-dir artifact/models/Qwen2.5-1.5B/base
+
+python script/4_benchmark_perplexity.py --base-model-dir artifact/models/SmolLM2-1.7B/base
+
+
+
+python script/5_plot_rank_budget_profiles.py --base-model-dir artifact/models/Qwen3-0.6B/base
+
+python script/5_plot_rank_budget_profiles.py --base-model-dir artifact/models/Qwen2.5-1.5B/base
+
+python script/5_plot_rank_budget_profiles.py --base-model-dir artifact/models/SmolLM2-1.7B/base
+
+
+
+
+
 
 
 

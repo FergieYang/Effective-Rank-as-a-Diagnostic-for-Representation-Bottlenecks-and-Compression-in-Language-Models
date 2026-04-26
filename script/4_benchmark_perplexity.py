@@ -28,6 +28,31 @@ from _model_layout import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "wikitext2" / "validation.txt"
+PERPLEXITY_FIELDNAMES = [
+    "base_model_id",
+    "model_name",
+    "model_label",
+    "model_dir",
+    "method_id",
+    "compression_method",
+    "alpha",
+    "alpha_tag",
+    "target_factorized_param_ratio",
+    "beta",
+    "beta_tag",
+    "trace_mix",
+    "uniform_shrink",
+    "allocation_rule",
+    "rank_budget_tag",
+    "data_path",
+    "num_windows",
+    "max_length",
+    "batch_size",
+    "max_windows",
+    "total_predicted_tokens",
+    "average_nll",
+    "perplexity",
+]
 
 
 def parse_args() -> argparse.Namespace:
@@ -158,9 +183,9 @@ def model_label(model_dir: Path) -> str:
     if meta_path.exists():
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
         method_id = meta.get("method_id")
-        alpha_tag = meta.get("alpha_tag")
-        if method_id and alpha_tag:
-            return f"{method_id}:{alpha_tag}"
+        budget_tag = meta.get("rank_budget_tag") or meta.get("alpha_tag")
+        if method_id and budget_tag:
+            return f"{method_id}:{budget_tag}"
         return str(meta.get("compression_method", model_dir.name))
     return model_dir.name
 
@@ -173,6 +198,13 @@ def model_run_metadata(model_dir: Path) -> dict[str, object]:
             "compression_method": "base_dense",
             "alpha": None,
             "alpha_tag": None,
+            "target_factorized_param_ratio": None,
+            "beta": None,
+            "beta_tag": None,
+            "trace_mix": None,
+            "uniform_shrink": None,
+            "allocation_rule": None,
+            "rank_budget_tag": None,
         }
 
     meta_path = model_dir / "compression_meta.json"
@@ -184,6 +216,13 @@ def model_run_metadata(model_dir: Path) -> dict[str, object]:
             "compression_method": meta.get("compression_method", model_dir.parent.name),
             "alpha": meta.get("alpha"),
             "alpha_tag": meta.get("alpha_tag"),
+            "target_factorized_param_ratio": meta.get("target_factorized_param_ratio", meta.get("alpha")),
+            "beta": meta.get("beta"),
+            "beta_tag": meta.get("beta_tag"),
+            "trace_mix": meta.get("trace_mix"),
+            "uniform_shrink": meta.get("uniform_shrink"),
+            "allocation_rule": meta.get("allocation_rule"),
+            "rank_budget_tag": meta.get("rank_budget_tag"),
         }
 
     return {
@@ -192,6 +231,13 @@ def model_run_metadata(model_dir: Path) -> dict[str, object]:
         "compression_method": model_dir.parent.name,
         "alpha": None,
         "alpha_tag": None,
+        "target_factorized_param_ratio": None,
+        "beta": None,
+        "beta_tag": None,
+        "trace_mix": None,
+        "uniform_shrink": None,
+        "allocation_rule": None,
+        "rank_budget_tag": None,
     }
 
 
@@ -280,6 +326,13 @@ def evaluate_model(model_dir: Path, windows: list[list[int]], args, tokenizer, d
         "compression_method": run_metadata["compression_method"],
         "alpha": run_metadata["alpha"],
         "alpha_tag": run_metadata["alpha_tag"],
+        "target_factorized_param_ratio": run_metadata["target_factorized_param_ratio"],
+        "beta": run_metadata["beta"],
+        "beta_tag": run_metadata["beta_tag"],
+        "trace_mix": run_metadata["trace_mix"],
+        "uniform_shrink": run_metadata["uniform_shrink"],
+        "allocation_rule": run_metadata["allocation_rule"],
+        "rank_budget_tag": run_metadata["rank_budget_tag"],
         "data_path": str(args.data_path),
         "num_windows": len(windows),
         "max_length": args.max_length,
@@ -346,14 +399,24 @@ def main() -> None:
         rows.append(evaluate_model(model_dir=model_dir, windows=windows, args=args, tokenizer=tokenizer, device=device))
 
     def sort_key(row: dict[str, object]):
-        alpha = row["alpha"]
+        alpha = row.get("alpha")
+        beta = row.get("beta")
         alpha_value = float(alpha) if alpha not in (None, "") else -1.0
-        return (str(row["base_model_id"]), str(row["method_id"]), alpha_value, str(row["model_dir"]))
+        beta_value = float(beta) if beta not in (None, "") else -1.0
+        budget_tag = row.get("rank_budget_tag") or row.get("alpha_tag") or ""
+        return (
+            str(row["base_model_id"]),
+            str(row["method_id"]),
+            alpha_value,
+            beta_value,
+            str(budget_tag),
+            str(row["model_dir"]),
+        )
 
     rows = sorted(rows, key=sort_key)
 
     with output_csv.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+        writer = csv.DictWriter(handle, fieldnames=PERPLEXITY_FIELDNAMES, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
 

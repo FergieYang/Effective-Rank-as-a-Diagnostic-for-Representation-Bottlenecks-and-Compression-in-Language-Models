@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-04-22T20:00:46",
+  "created_at": "2026-04-25T21:11:34",
   "model_path": "artifact\\models\\Qwen3-0.6B\\base",
   "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\data\\wikitext2\\train.txt",
   "output_dir": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\result\\Qwen3-0.6B\\1_statistics",
@@ -13,5 +13,6 @@
   "activation_definition": "MLP input effective rank uses centered covariance eigenvalues collected at post_attention_layernorm output. MLP input second-moment statistics are retained as diagnostics.",
   "weight_definition": "MLP weight effective rank uses squared singular values with p_i = sigma_i^2 / sum_j sigma_j^2.",
   "mlp_output_trace_definition": "MLP output uncentered trace is E[||delta||^2] where delta is the output of layer.mlp before residual addition.",
-  "columns_note": "layer_statistics.csv merges the old stage-1 activation-rank and weight-rank information into one per-layer table and adds mlp_output_uncentered_trace."
+  "mlp_output_relative_trace_definition": "mlp_output_to_residual_trace_ratio is mlp_output_uncentered_trace divided by mlp_residual_second_moment_trace, where the denominator is measured from the input to post_attention_layernorm. This measures MLP output magnitude relative to the actual residual stream before that normalization step.",
+  "columns_note": "layer_statistics.csv merges the old stage-1 activation-rank and weight-rank information into one per-layer table and adds mlp_output_uncentered_trace plus mlp_output_to_residual_trace_ratio."
 }

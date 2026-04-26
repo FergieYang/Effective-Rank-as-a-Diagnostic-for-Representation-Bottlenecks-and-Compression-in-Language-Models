@@ -5,6 +5,7 @@ For the specified model, it gathers:
     - MLP-input activation rank statistics
     - MLP weight-rank statistics
     - MLP-output uncentered trace before residual addition
+    - MLP-output trace relative to the current residual stream magnitude
 
 It writes one merged per-layer CSV plus supporting tensor dumps.
 
@@ -252,6 +253,7 @@ def main() -> None:
 
     second_moments = [None for _ in layers]
     activation_sums = [None for _ in layers]
+    residual_second_moment_sums = [None for _ in layers]
     input_token_counts = [0 for _ in layers]
     output_squared_norm_sums = [0.0 for _ in layers]
     output_token_counts = [0 for _ in layers]
@@ -260,24 +262,30 @@ def main() -> None:
     output_hooks = []
 
     def make_input_hook(layer_index: int):
-        def hook(_module, _inputs, output):
+        def hook(_module, inputs, output):
             if input_token_counts[layer_index] >= args.max_token_samples:
                 return
 
+            residual_stream = inputs[0] if isinstance(inputs, tuple) else inputs
             activations = output[0] if isinstance(output, tuple) else output
+            residual_flat = residual_stream.detach().reshape(-1, residual_stream.shape[-1]).float().cpu()
             flat = activations.detach().reshape(-1, activations.shape[-1]).float().cpu()
             remaining = args.max_token_samples - input_token_counts[layer_index]
             if flat.shape[0] > remaining:
                 flat = flat[:remaining]
+                residual_flat = residual_flat[:remaining]
 
             if second_moments[layer_index] is None:
                 hidden_size = flat.shape[1]
                 second_moments[layer_index] = torch.zeros(hidden_size, hidden_size, dtype=torch.float64)
                 activation_sums[layer_index] = torch.zeros(hidden_size, dtype=torch.float64)
+                residual_second_moment_sums[layer_index] = torch.zeros(hidden_size, hidden_size, dtype=torch.float64)
 
             flat = flat.double()
+            residual_flat = residual_flat.double()
             second_moments[layer_index] += flat.T @ flat
             activation_sums[layer_index] += flat.sum(dim=0)
+            residual_second_moment_sums[layer_index] += residual_flat.T @ residual_flat
             input_token_counts[layer_index] += int(flat.shape[0])
 
         return hook
@@ -366,7 +374,20 @@ def main() -> None:
         hidden_size = int(covariance_eigenvalues.numel())
         input_effective_rank = effective_rank(covariance_eigenvalues, torch)
         input_second_moment_effective_rank = effective_rank(second_moment_eigenvalues, torch)
+        residual_second_moment = residual_second_moment_sums[layer_index] / token_count
+        residual_second_moment_eigenvalues = sorted_eigenvalues(residual_second_moment, torch)
         output_trace = output_squared_norm_sums[layer_index] / output_token_counts[layer_index]
+        input_second_moment_trace = float(second_moment_eigenvalues.sum().item())
+        if input_second_moment_trace <= 0:
+            raise SystemExit(
+                f"Layer {layer_index} has non-positive mlp_input_second_moment_trace={input_second_moment_trace}."
+            )
+        residual_second_moment_trace = float(residual_second_moment_eigenvalues.sum().item())
+        if residual_second_moment_trace <= 0:
+            raise SystemExit(
+                f"Layer {layer_index} has non-positive mlp_residual_second_moment_trace={residual_second_moment_trace}."
+            )
+        output_to_residual_trace_ratio = output_trace / residual_second_moment_trace
 
         gate_ratio = float(weight_rows["mlp.gate_proj"]["effective_rank_ratio"])
         up_ratio = float(weight_rows["mlp.up_proj"]["effective_rank_ratio"])
@@ -390,10 +411,13 @@ def main() -> None:
                 "mlp_input_second_moment_effective_rank_ratio": input_second_moment_effective_rank / hidden_size,
                 "mlp_input_covariance_trace": float(covariance_eigenvalues.sum().item()),
                 "mlp_input_covariance_top_eigenvalue": float(covariance_eigenvalues[0].item()),
-                "mlp_input_second_moment_trace": float(second_moment_eigenvalues.sum().item()),
+                "mlp_input_second_moment_trace": input_second_moment_trace,
                 "mlp_input_second_moment_top_eigenvalue": float(second_moment_eigenvalues[0].item()),
+                "mlp_residual_second_moment_trace": residual_second_moment_trace,
+                "mlp_residual_second_moment_top_eigenvalue": float(residual_second_moment_eigenvalues[0].item()),
                 "mlp_input_positive_covariance_eigenvalues": int((covariance_eigenvalues > 0).sum().item()),
                 "mlp_output_uncentered_trace": output_trace,
+                "mlp_output_to_residual_trace_ratio": output_to_residual_trace_ratio,
                 "gate_proj_weight_effective_rank": float(weight_rows["mlp.gate_proj"]["effective_rank"]),
                 "gate_proj_weight_effective_rank_ratio": gate_ratio,
                 "up_proj_weight_effective_rank": float(weight_rows["mlp.up_proj"]["effective_rank"]),
@@ -429,7 +453,17 @@ def main() -> None:
         "activation_definition": "MLP input effective rank uses centered covariance eigenvalues collected at post_attention_layernorm output. MLP input second-moment statistics are retained as diagnostics.",
         "weight_definition": "MLP weight effective rank uses squared singular values with p_i = sigma_i^2 / sum_j sigma_j^2.",
         "mlp_output_trace_definition": "MLP output uncentered trace is E[||delta||^2] where delta is the output of layer.mlp before residual addition.",
-        "columns_note": "layer_statistics.csv merges the old stage-1 activation-rank and weight-rank information into one per-layer table and adds mlp_output_uncentered_trace.",
+        "mlp_output_relative_trace_definition": (
+            "mlp_output_to_residual_trace_ratio is mlp_output_uncentered_trace divided by "
+            "mlp_residual_second_moment_trace, where the denominator is measured from the "
+            "input to post_attention_layernorm. This measures MLP output magnitude relative "
+            "to the actual residual stream before that normalization step."
+        ),
+        "columns_note": (
+            "layer_statistics.csv merges the old stage-1 activation-rank and weight-rank "
+            "information into one per-layer table and adds mlp_output_uncentered_trace plus "
+            "mlp_output_to_residual_trace_ratio."
+        ),
     }
     (args.output_dir / "statistics_meta.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 

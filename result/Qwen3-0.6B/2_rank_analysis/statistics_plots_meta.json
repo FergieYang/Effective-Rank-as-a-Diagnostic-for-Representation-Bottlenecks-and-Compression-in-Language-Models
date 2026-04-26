@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-04-22T20:00:50",
+  "created_at": "2026-04-25T21:12:44",
   "statistics_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\result\\Qwen3-0.6B\\1_statistics\\layer_statistics.csv",
   "output_dir": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project\\result\\Qwen3-0.6B\\2_rank_analysis",
   "plots": [
@@ -33,5 +33,32 @@
       "mlp_input_effective_rank_ratio": 0.27015059293279725
     }
   ],
-  "trace_note": "The combined figure overlays normalized log MLP output trace on the main normalized-statistic axis and also shows the raw MLP output trace on a secondary log-scaled axis."
+  "top_relative_output_trace_layers": [
+    {
+      "layer_index": 2,
+      "mlp_output_to_residual_trace_ratio": 759.1854169583127,
+      "mlp_output_uncentered_trace": 90318.28329467773
+    },
+    {
+      "layer_index": 0,
+      "mlp_output_to_residual_trace_ratio": 0.5091947186705301,
+      "mlp_output_uncentered_trace": 17.880733653903008
+    },
+    {
+      "layer_index": 1,
+      "mlp_output_to_residual_trace_ratio": 0.29622876802117104,
+      "mlp_output_uncentered_trace": 21.612548276782036
+    },
+    {
+      "layer_index": 27,
+      "mlp_output_to_residual_trace_ratio": 0.25341552490188235,
+      "mlp_output_uncentered_trace": 120545.57232666016
+    },
+    {
+      "layer_index": 22,
+      "mlp_output_to_residual_trace_ratio": 0.04744634132723115,
+      "mlp_output_uncentered_trace": 7201.595020294189
+    }
+  ],
+  "trace_note": "The combined figure overlays normalized log MLP output trace and normalized log MLP output/residual trace ratio on the main normalized-statistic axis and also shows the raw MLP output trace on a secondary log-scaled axis."
 }

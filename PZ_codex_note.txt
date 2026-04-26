@@ -573,3 +573,267 @@ Layer-skipping policy update after introducing trace-aware importance:
   - do not skip the final layer by default
 - The optional skip-first-layer flag may still remain available for ablations,
   but it is no longer the main policy.
+
+
+Session note - 2026-04-25
+
+Stage-3 redesign and experiment-status update:
+- Today we implemented a new two-script Stage 3 workflow:
+  - script/3_compute_rank_budgets.py
+  - script/3_compress_models.py
+- A shared helper module was added:
+  - script/_3_compression_common.py
+- The new workflow consumes the combined Stage-1 output:
+  - result/<base_model_id>/1_statistics/layer_statistics.csv
+- The rank-budget script writes reusable analysis artifacts:
+  - result/<base_model_id>/3_compression/rank_budgets_<tag>.csv
+  - result/<base_model_id>/3_compression/rank_budgets_<tag>.json
+- The compression script consumes the rank-budget CSV and writes three model
+  variants at once:
+  - plain_svd_uniform
+  - activation_aware_uniform
+  - activation_aware_trace_layerwise
+- All three variants use the same compressed layer set and exact total rank
+  budget per compressed module, so the main comparison remains fair.
+
+Important Stage-3 policy correction:
+- The latest intended default is now to exclude boundary layers from the main
+  compression intervention:
+  - skip the first transformer layer by default
+  - skip the final transformer layer by default
+- Rationale:
+  - first and final layers are boundary layers and may be unusually sensitive
+  - the main comparison is about layerwise allocation versus uniform allocation,
+    not about whether every layer can be compressed
+  - both uniform and layerwise methods use the same excluded-layer policy
+- The argparse BooleanOptionalAction flags remain available for ablations:
+  - --no-skip-first-layer
+  - --no-skip-final-layer
+- This note supersedes the 2026-04-22 correction that said not to skip boundary
+  layers by default.
+
+Very important allocation-design change:
+- We changed the meaning of alpha in the new Stage-3 scripts.
+- Old meaning:
+  - alpha was a direct rank multiplier:
+    - raw_rank = alpha * input_effective_rank * trace_weight
+- New meaning:
+  - alpha is the target factorized/dense parameter ratio for the compressed
+    gate_proj and up_proj matrices.
+  - Valid range:
+    - 0 < alpha <= 1
+  - Example:
+    - alpha = 0.70 means the targeted gate/up projections should have about
+      70% of their dense parameter count under factorized accounting.
+- Uniform rank is now derived from this target ratio and the model dimensions:
+  - dense_params = out_features * in_features
+  - factorized_params_per_rank = out_features + in_features
+  - requested_uniform_rank =
+      alpha * dense_params / factorized_params_per_rank
+- The uniform rank is rounded and capped by hidden_size.
+- The exact total rank budget is:
+  - uniform_rank * number_of_compressed_layers
+
+Updated trace-aware layerwise allocation:
+- The trace-aware score for each layer is now:
+  - score_l =
+      mlp_input_effective_rank_l
+      * trace_weight_l
+- Where:
+  - log_trace_l = log(mlp_output_uncentered_trace_l)
+  - normalized_log_trace_l is min-max normalized across compressed layers
+  - trace_weight_l =
+      beta + (1 - beta) * normalized_log_trace_l
+- The layerwise scores are scaled so their total rank budget exactly matches
+  the uniform total rank budget derived from alpha.
+- Integer ranks are then adjusted to match the exact same total budget.
+- Ranks are upper-bounded by hidden_size.
+- This prevents the previous problem where alpha=3.0 could produce factorized
+  models that were larger than dense for some architectures.
+
+Important artifact interpretation:
+- Existing a3p00_* Stage-3 artifacts were produced under the old alpha
+  semantics.
+- New target-ratio runs should use tags like:
+  - a0p70_b0p50
+- Old a3p00_* results should not be mixed analytically with new a0p70-style
+  results as if alpha meant the same thing.
+
+Stage-4 updates completed:
+- script/4_benchmark_perplexity.py was updated to preserve:
+  - beta
+  - beta_tag
+  - rank_budget_tag
+  - target_factorized_param_ratio
+- The perplexity script still supports incremental benchmarking:
+  - it skips existing rows by resolved model_dir, data_path, max_length,
+    batch_size, and max_windows unless --recompute-existing is passed.
+- script/4_summarize_effective_size.py was also updated to preserve beta and
+  target-ratio metadata.
+
+Third-model update:
+- We initially considered meta-llama/Llama-3.2-1B, but access is gated and was
+  pending.
+- We switched the third model candidate to:
+  - HuggingFaceTB/SmolLM2-1.7B
+- The example workflow now uses:
+  - artifact/models/SmolLM2-1.7B/base
+
+Observed old-alpha experimental status before the alpha redesign:
+- With old alpha=3.0, beta=0.5:
+  - Qwen3-0.6B:
+    - activation-aware uniform slightly beat trace-aware layerwise
+    - layerwise minus uniform average NLL was about +0.0336
+  - Qwen2.5-1.5B:
+    - activation-aware uniform beat trace-aware layerwise more clearly
+    - layerwise minus uniform average NLL was about +0.0619
+  - SmolLM2-1.7B:
+    - trace-aware layerwise slightly beat activation-aware uniform
+    - layerwise minus uniform average NLL was about -0.0063
+- However, SmolLM2 with old alpha=3.0 was not a real compression setting:
+  - targeted factorized parameter ratio was about 1.0718
+  - this motivated making alpha a target ratio and enforcing alpha <= 1
+- Across all three old-alpha runs, activation-aware uniform was much better
+  than plain SVD uniform, so the activation-aware approximation objective
+  remains a strong result.
+
+Recommended next experiment after the redesign:
+- Recompute rank budgets and compressed models for all three models using the
+  new alpha semantics:
+  - alpha = 0.70
+  - beta = 0.50
+- Then rerun Stage 4 incrementally.
+- Possible follow-up settings:
+  - alpha = 0.60 or 0.80 for a light compression-ratio sweep
+  - beta = 0.25 only as a stronger-trace sensitivity check
+
+2026-04-25 additional update:
+- We added exactly one safety layer to the Stage-3 rank allocation:
+  - uniform_shrink
+- Purpose:
+  - pull the layerwise score distribution closer to uniform without adding
+    multiple guards or changing the core allocation logic
+- New default:
+  - uniform_shrink = 0.25
+- Formula:
+  - shrunk_score_l =
+      (1 - uniform_shrink) * score_l
+      + uniform_shrink * mean(score across compressed layers)
+- This safety layer is applied after the raw allocation score is computed:
+  - for mixture:
+    - score_l =
+        (1 - trace_mix) * normalized_mlp_input_effective_rank_l
+        + trace_mix * normalized_log_mlp_output_trace_l
+  - for multiplicative:
+    - score_l =
+        mlp_input_effective_rank_l
+        * (beta + (1 - beta) * normalized_log_mlp_output_trace_l)
+- The shrunk scores are then scaled to the exact same total rank budget as the
+  corresponding uniform allocation.
+- Important implementation detail:
+  - uniform_shrink is now part of the rank-budget tag so old and new runs do
+    not collide in Stage-3 artifacts or Stage-4 benchmark rows.
+
+2026-04-25 end-of-day summary:
+- Stage-3 was redesigned into two scripts:
+  - script/3_compute_rank_budgets.py
+  - script/3_compress_models.py
+- Current Stage-3 workflow:
+  - first compute and save per-layer rank budgets plus the corresponding
+    uniform rank budget
+  - then compress and emit three model variants from that saved budget:
+    - plain_svd_uniform
+    - activation_aware_uniform
+    - activation_aware_trace_layerwise
+- Current default compressed-layer policy:
+  - include first layer
+  - include final layer
+- Current alpha semantics:
+  - alpha is the target factorized/dense parameter ratio
+  - not the old raw multiplier-style meaning
+- Current rank cap:
+  - each layer rank is upper-bounded by hidden_size
+- Current default allocation rule:
+  - allocation_rule = mixture
+- Current mixture formula:
+  - score_l =
+      (1 - trace_mix) * normalized_mlp_input_effective_rank_l
+      + trace_mix * normalized_log_mlp_output_trace_l
+- Trace can now be disabled cleanly by:
+  - trace_mix = 0
+- Old formula is still preserved for comparison:
+  - allocation_rule = multiplicative
+- New default safety layer:
+  - uniform_shrink = 0.25
+  - shrinks score distribution toward uniform before converting scores into
+    ranks
+- Metadata propagation was updated so downstream analysis keeps the new fields:
+  - trace_mix
+  - allocation_rule
+  - uniform_shrink
+  - rank_budget_tag
+- Stage-4 status:
+  - incremental benchmark behavior is still preserved
+  - adding new alpha/beta/trace_mix/uniform_shrink settings should not force
+    rerunning existing perplexity rows unless --recompute-existing is used
+- Stage-5 status:
+  - script/5_plot_rank_budget_profiles.py is the new simple rank-budget view
+  - it overlays:
+    - MLP input centered effective-rank ratio
+    - MLP output trace
+    - calculated target rank budget
+    - uniform rank budget
+  - weight-rank curves were intentionally removed
+- Model set used in current experiments:
+  - Qwen3-0.6B
+  - Qwen2.5-1.5B
+  - SmolLM2-1.7B
+- Main empirical takeaway so far:
+  - activation-aware compression is consistently much better than plain SVD
+  - but layerwise rank allocation does not consistently beat activation-aware
+    uniform across models
+  - SmolLM2 showed a positive signal under the mixture rule, while Qwen models
+    were still harder to beat with layerwise allocation
+- Main current hypothesis:
+  - the layerwise score distribution was too high-variance and could
+    over-allocate or starve layers
+  - uniform_shrink was added as the single safety layer to test this directly
+
+2026-04-25 trace-statistic correction:
+- We noticed an important caveat in the new trace analysis:
+  - mlp_output_uncentered_trace is an absolute magnitude
+  - comparing it directly across layers can be misleading because activation
+    scale can drift across the network
+- We first tried a relative trace statistic using:
+  - mlp_output_uncentered_trace / mlp_input_second_moment_trace
+- But that denominator was taken at:
+  - post_attention_layernorm output
+- That means it is already normalized and is not the true residual-stream
+  magnitude.
+- We corrected the design:
+  - Stage 1 now also collects the pre-layernorm residual stream magnitude
+    entering post_attention_layernorm
+  - The new preferred relative trace statistic is:
+    - mlp_output_to_residual_trace_ratio =
+        mlp_output_uncentered_trace / mlp_residual_second_moment_trace
+- Interpretation:
+  - numerator:
+    - MLP output trace before residual addition
+  - denominator:
+    - second-moment trace of the actual residual stream before the
+      post-attention layernorm
+  - this is a much better measure of how large the MLP update is relative to
+    the current residual pathway
+- Stage-1 update:
+  - script/1_collect_statistics.py now writes:
+    - mlp_residual_second_moment_trace
+    - mlp_residual_second_moment_top_eigenvalue
+    - mlp_output_to_residual_trace_ratio
+- Stage-2 update:
+  - script/2_plot_statistics.py now plots the normalized log
+    output/residual trace ratio
+  - old CSV compatibility is preserved:
+    - if only mlp_output_to_input_trace_ratio exists, Stage 2 can still read it
+- Practical note:
+  - to get the corrected relative-trace statistic, Stage 1 must be rerun for
+    the model before Stage 2 is rerun

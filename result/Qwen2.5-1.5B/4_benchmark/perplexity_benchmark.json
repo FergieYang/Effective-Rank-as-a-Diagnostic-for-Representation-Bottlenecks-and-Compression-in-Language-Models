@@ -1,15 +1,15 @@
 {
-  "created_at": "2026-04-28T19:40:13",
+  "created_at": "2026-04-28T23:41:58",
   "base_model_dir": "artifact\\models\\Qwen2.5-1.5B\\base",
   "base_model_id": "Qwen2.5-1.5B",
   "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\validation.txt",
   "tokenizer_path": "artifact\\models\\Qwen2.5-1.5B\\base",
   "device": "cuda",
   "num_models": 11,
-  "num_windows": 64,
+  "num_windows": 256,
   "max_length": 512,
   "batch_size": 4,
-  "max_windows": 64,
+  "max_windows": 256,
   "recompute_existing": false,
   "skipped_existing_runs": 0,
   "output_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen2.5-1.5B\\4_benchmark\\perplexity_benchmark.csv",
@@ -26,13 +26,13 @@
       "rank_budget_tag": "a0p50_w0p25",
       "source_model_dir": "artifact\\models\\Qwen2.5-1.5B\\activation_aware_layerwise\\a0p50_w0p25",
       "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\validation.txt",
-      "num_windows": 64,
+      "num_windows": 256,
       "max_length": 512,
       "batch_size": 4,
-      "max_windows": 64,
-      "total_predicted_tokens": 32581,
-      "average_nll": 6.851543465063412,
-      "perplexity": 945.3388787500891
+      "max_windows": 256,
+      "total_predicted_tokens": 130693,
+      "average_nll": 6.854018321477342,
+      "perplexity": 947.6813541870588
     },
     {
       "base_model_id": "Qwen2.5-1.5B",
@@ -46,13 +46,13 @@
       "rank_budget_tag": "a0p50_w0p50",
       "source_model_dir": "artifact\\models\\Qwen2.5-1.5B\\activation_aware_layerwise\\a0p50_w0p50",
       "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\validation.txt",
-      "num_windows": 64,
+      "num_windows": 256,
       "max_length": 512,
       "batch_size": 4,
-      "max_windows": 64,
-      "total_predicted_tokens": 32581,
-      "average_nll": 5.0467342984987,
-      "perplexity": 155.51377275964464
+      "max_windows": 256,
+      "total_predicted_tokens": 130693,
+      "average_nll": 5.041200920574707,
+      "perplexity": 154.65563267883167
     },
     {
       "base_model_id": "Qwen2.5-1.5B",
@@ -66,13 +66,13 @@
       "rank_budget_tag": "a0p50_w0p75",
       "source_model_dir": "artifact\\models\\Qwen2.5-1.5B\\activation_aware_layerwise\\a0p50_w0p75",
       "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\validation.txt",
-      "num_windows": 64,
+      "num_windows": 256,
       "max_length": 512,
       "batch_size": 4,
-      "max_windows": 64,
-      "total_predicted_tokens": 32581,
-      "average_nll": 4.854153389964533,
-      "perplexity": 128.27204882853383
+      "max_windows": 256,
+      "total_predicted_tokens": 130693,
+      "average_nll": 4.70047305496495,
+      "perplexity": 109.99919581191831
     },
     {
       "base_model_id": "Qwen2.5-1.5B",
@@ -86,13 +86,13 @@
       "rank_budget_tag": "a0p80_w0p25",
       "source_model_dir": "artifact\\models\\Qwen2.5-1.5B\\activation_aware_layerwise\\a0p80_w0p25",
       "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\validation.txt",
-      "num_windows": 64,
+      "num_windows": 256,
       "max_length": 512,
       "batch_size": 4,
-      "max_windows": 64,
-      "total_predicted_tokens": 32581,
-      "average_nll": 3.247504969869053,
-      "perplexity": 25.72607244998554
+      "max_windows": 256,
+      "total_predicted_tokens": 130693,
+      "average_nll": 3.213602442082944,
+      "perplexity": 24.868512427226545
     },
     {
       "base_model_id": "Qwen2.5-1.5B",
@@ -106,13 +106,13 @@
       "rank_budget_tag": "a0p80_w0p50",
       "source_model_dir": "artifact\\models\\Qwen2.5-1.5B\\activation_aware_layerwise\\a0p80_w0p50",
       "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\validation.txt",
-      "num_windows": 64,
+      "num_windows": 256,
       "max_length": 512,
       "batch_size": 4,
-      "max_windows": 64,
-      "total_predicted_tokens": 32581,
-      "average_nll": 3.0406666730254517,
-      "perplexity": 20.919184843578886
+      "max_windows": 256,
+      "total_predicted_tokens": 130693,
+      "average_nll": 2.996502806127829,
+      "perplexity": 20.015416590206463
     },
     {
       "base_model_id": "Qwen2.5-1.5B",
@@ -126,13 +126,13 @@
       "rank_budget_tag": "a0p80_w0p75",
       "source_model_dir": "artifact\\models\\Qwen2.5-1.5B\\activation_aware_layerwise\\a0p80_w0p75",
       "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\validation.txt",
-      "num_windows": 64,
+      "num_windows": 256,
       "max_length": 512,
       "batch_size": 4,
-      "max_windows": 64,
-      "total_predicted_tokens": 32581,
-      "average_nll": 3.3859025276350105,
-      "perplexity": 29.5446455459564
+      "max_windows": 256,
+      "total_predicted_tokens": 130693,
+      "average_nll": 3.3479479679935067,
+      "perplexity": 28.444305091190454
     },
     {
       "base_model_id": "Qwen2.5-1.5B",
@@ -146,13 +146,13 @@
       "rank_budget_tag": "a0p50",
       "source_model_dir": "artifact\\models\\Qwen2.5-1.5B\\activation_aware_uniform\\a0p50",
       "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\validation.txt",
-      "num_windows": 64,
+      "num_windows": 256,
       "max_length": 512,
       "batch_size": 4,
-      "max_windows": 64,
-      "total_predicted_tokens": 32581,
-      "average_nll": 4.167495000245679,
-      "perplexity": 64.55354279183646
+      "max_windows": 256,
+      "total_predicted_tokens": 130693,
+      "average_nll": 4.170202068944204,
+      "perplexity": 64.72853041179914
     },
     {
       "base_model_id": "Qwen2.5-1.5B",
@@ -166,13 +166,13 @@
       "rank_budget_tag": "a0p80",
       "source_model_dir": "artifact\\models\\Qwen2.5-1.5B\\activation_aware_uniform\\a0p80",
       "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\validation.txt",
-      "num_windows": 64,
+      "num_windows": 256,
       "max_length": 512,
       "batch_size": 4,
-      "max_windows": 64,
-      "total_predicted_tokens": 32581,
-      "average_nll": 2.927170893635262,
-      "perplexity": 18.674722913916536
+      "max_windows": 256,
+      "total_predicted_tokens": 130693,
+      "average_nll": 2.940891471237523,
+      "perplexity": 18.932716763819712
     },
     {
       "base_model_id": "Qwen2.5-1.5B",
@@ -186,13 +186,13 @@
       "rank_budget_tag": null,
       "source_model_dir": "artifact\\models\\Qwen2.5-1.5B\\base",
       "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\validation.txt",
-      "num_windows": 64,
+      "num_windows": 256,
       "max_length": 512,
       "batch_size": 4,
-      "max_windows": 64,
-      "total_predicted_tokens": 32581,
-      "average_nll": 2.5674380457447743,
-      "perplexity": 13.032393239300493
+      "max_windows": 256,
+      "total_predicted_tokens": 130693,
+      "average_nll": 2.570814746989554,
+      "perplexity": 13.076474119871664
     },
     {
       "base_model_id": "Qwen2.5-1.5B",
@@ -206,13 +206,13 @@
       "rank_budget_tag": "a0p50",
       "source_model_dir": "artifact\\models\\Qwen2.5-1.5B\\plain_svd_uniform\\a0p50",
       "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\validation.txt",
-      "num_windows": 64,
+      "num_windows": 256,
       "max_length": 512,
       "batch_size": 4,
-      "max_windows": 64,
-      "total_predicted_tokens": 32581,
-      "average_nll": 8.173139269160748,
-      "perplexity": 3544.4535101667716
+      "max_windows": 256,
+      "total_predicted_tokens": 130693,
+      "average_nll": 8.179737915537071,
+      "perplexity": 3567.919442024456
     },
     {
       "base_model_id": "Qwen2.5-1.5B",
@@ -226,13 +226,13 @@
       "rank_budget_tag": "a0p80",
       "source_model_dir": "artifact\\models\\Qwen2.5-1.5B\\plain_svd_uniform\\a0p80",
       "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\validation.txt",
-      "num_windows": 64,
+      "num_windows": 256,
       "max_length": 512,
       "batch_size": 4,
-      "max_windows": 64,
-      "total_predicted_tokens": 32581,
-      "average_nll": 6.653060657902466,
-      "perplexity": 775.1531772611685
+      "max_windows": 256,
+      "total_predicted_tokens": 130693,
+      "average_nll": 6.599083067926738,
+      "perplexity": 734.4214658125705
     }
   ]
 }

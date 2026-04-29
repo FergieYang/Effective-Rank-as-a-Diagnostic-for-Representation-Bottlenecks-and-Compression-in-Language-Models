@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-04-28T19:53:17",
+  "created_at": "2026-04-29T00:06:20",
   "benchmark_csvs": [
     "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Llama-3.2-1B\\4_benchmark\\perplexity_benchmark.csv",
     "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen2.5-1.5B\\4_benchmark\\perplexity_benchmark.csv",
@@ -32,7 +32,7 @@
             "method_id": "activation_aware_uniform",
             "method_label": "Activation-aware uniform",
             "metric": "perplexity",
-            "metric_value": 263.66629430492907,
+            "metric_value": 258.49983953192844,
             "delta_from_uniform": 0.0
           },
           {
@@ -41,8 +41,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 3711.238943321315,
-            "delta_from_uniform": 3447.572649016386
+            "metric_value": 3361.7871429080915,
+            "delta_from_uniform": 3103.287303376163
           },
           {
             "alpha": 0.5,
@@ -50,8 +50,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 3002.226555117456,
-            "delta_from_uniform": 2738.560260812527
+            "metric_value": 2952.5468802473656,
+            "delta_from_uniform": 2694.047040715437
           },
           {
             "alpha": 0.5,
@@ -59,8 +59,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 2705.52144692212,
-            "delta_from_uniform": 2441.855152617191
+            "metric_value": 2610.9574581046427,
+            "delta_from_uniform": 2352.457618572714
           },
           {
             "alpha": 0.8,
@@ -68,7 +68,7 @@
             "method_id": "activation_aware_uniform",
             "method_label": "Activation-aware uniform",
             "metric": "perplexity",
-            "metric_value": 28.286238718319716,
+            "metric_value": 27.70995661435973,
             "delta_from_uniform": 0.0
           },
           {
@@ -77,8 +77,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 162.87740670817655,
-            "delta_from_uniform": 134.59116798985684
+            "metric_value": 163.70748610152322,
+            "delta_from_uniform": 135.9975294871635
           },
           {
             "alpha": 0.8,
@@ -86,8 +86,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 627.190267188879,
-            "delta_from_uniform": 598.9040284705593
+            "metric_value": 575.2502513528073,
+            "delta_from_uniform": 547.5402947384475
           },
           {
             "alpha": 0.8,
@@ -95,8 +95,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 777.6833005466781,
-            "delta_from_uniform": 749.3970618283583
+            "metric_value": 774.1559880924506,
+            "delta_from_uniform": 746.4460314780908
           }
         ]
       }
@@ -123,7 +123,7 @@
             "method_id": "activation_aware_uniform",
             "method_label": "Activation-aware uniform",
             "metric": "perplexity",
-            "metric_value": 64.55354279183646,
+            "metric_value": 64.72853041179914,
             "delta_from_uniform": 0.0
           },
           {
@@ -132,8 +132,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 945.3388787500891,
-            "delta_from_uniform": 880.7853359582526
+            "metric_value": 947.6813541870588,
+            "delta_from_uniform": 882.9528237752596
           },
           {
             "alpha": 0.5,
@@ -141,8 +141,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 155.51377275964464,
-            "delta_from_uniform": 90.96022996780817
+            "metric_value": 154.65563267883167,
+            "delta_from_uniform": 89.92710226703252
           },
           {
             "alpha": 0.5,
@@ -150,8 +150,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 128.27204882853383,
-            "delta_from_uniform": 63.71850603669736
+            "metric_value": 109.99919581191831,
+            "delta_from_uniform": 45.27066540011917
           },
           {
             "alpha": 0.8,
@@ -159,7 +159,7 @@
             "method_id": "activation_aware_uniform",
             "method_label": "Activation-aware uniform",
             "metric": "perplexity",
-            "metric_value": 18.674722913916536,
+            "metric_value": 18.932716763819712,
             "delta_from_uniform": 0.0
           },
           {
@@ -168,8 +168,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 25.72607244998554,
-            "delta_from_uniform": 7.051349536069004
+            "metric_value": 24.868512427226545,
+            "delta_from_uniform": 5.935795663406832
           },
           {
             "alpha": 0.8,
@@ -177,8 +177,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 20.919184843578886,
-            "delta_from_uniform": 2.24446192966235
+            "metric_value": 20.015416590206463,
+            "delta_from_uniform": 1.0826998263867509
           },
           {
             "alpha": 0.8,
@@ -186,8 +186,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 29.5446455459564,
-            "delta_from_uniform": 10.869922632039863
+            "metric_value": 28.444305091190454,
+            "delta_from_uniform": 9.511588327370742
           }
         ]
       }
@@ -210,29 +210,11 @@
         "rows": [
           {
             "alpha": 0.5,
-            "w": 0.25,
+            "w": null,
             "method_id": "activation_aware_uniform",
             "method_label": "Activation-aware uniform",
             "metric": "perplexity",
-            "metric_value": 154.6021980227486,
-            "delta_from_uniform": 0.0
-          },
-          {
-            "alpha": 0.5,
-            "w": 0.5,
-            "method_id": "activation_aware_uniform",
-            "method_label": "Activation-aware uniform",
-            "metric": "perplexity",
-            "metric_value": 154.6021980227486,
-            "delta_from_uniform": 0.0
-          },
-          {
-            "alpha": 0.5,
-            "w": 0.75,
-            "method_id": "activation_aware_uniform",
-            "method_label": "Activation-aware uniform",
-            "metric": "perplexity",
-            "metric_value": 154.6021980227486,
+            "metric_value": 103.35847454830461,
             "delta_from_uniform": 0.0
           },
           {
@@ -241,8 +223,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 264.37113057877093,
-            "delta_from_uniform": 109.76893255602232
+            "metric_value": 188.6897341499615,
+            "delta_from_uniform": 85.3312596016569
           },
           {
             "alpha": 0.5,
@@ -250,8 +232,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 179.16195074063486,
-            "delta_from_uniform": 24.559752717886255
+            "metric_value": 121.24954013704001,
+            "delta_from_uniform": 17.8910655887354
           },
           {
             "alpha": 0.5,
@@ -259,34 +241,16 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 169.94516778415039,
-            "delta_from_uniform": 15.342969761401775
+            "metric_value": 111.2679617152522,
+            "delta_from_uniform": 7.909487166947585
           },
           {
             "alpha": 0.8,
-            "w": 0.25,
+            "w": null,
             "method_id": "activation_aware_uniform",
             "method_label": "Activation-aware uniform",
             "metric": "perplexity",
-            "metric_value": 61.443325380308245,
-            "delta_from_uniform": 0.0
-          },
-          {
-            "alpha": 0.8,
-            "w": 0.5,
-            "method_id": "activation_aware_uniform",
-            "method_label": "Activation-aware uniform",
-            "metric": "perplexity",
-            "metric_value": 61.443325380308245,
-            "delta_from_uniform": 0.0
-          },
-          {
-            "alpha": 0.8,
-            "w": 0.75,
-            "method_id": "activation_aware_uniform",
-            "method_label": "Activation-aware uniform",
-            "metric": "perplexity",
-            "metric_value": 61.443325380308245,
+            "metric_value": 45.80816355270495,
             "delta_from_uniform": 0.0
           },
           {
@@ -295,8 +259,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 100.47766505263407,
-            "delta_from_uniform": 39.03433967232582
+            "metric_value": 69.30769989713892,
+            "delta_from_uniform": 23.49953634443397
           },
           {
             "alpha": 0.8,
@@ -304,8 +268,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 77.52926846222256,
-            "delta_from_uniform": 16.085943081914316
+            "metric_value": 52.79881927981566,
+            "delta_from_uniform": 6.990655727110713
           },
           {
             "alpha": 0.8,
@@ -313,8 +277,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 75.00198465898389,
-            "delta_from_uniform": 13.558659278675641
+            "metric_value": 53.51902068829615,
+            "delta_from_uniform": 7.710857135591205
           }
         ]
       }
@@ -341,7 +305,7 @@
             "method_id": "activation_aware_uniform",
             "method_label": "Activation-aware uniform",
             "metric": "perplexity",
-            "metric_value": 166.60801963366063,
+            "metric_value": 143.85467027013487,
             "delta_from_uniform": 0.0
           },
           {
@@ -350,8 +314,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 3901.102695646465,
-            "delta_from_uniform": 3734.494676012804
+            "metric_value": 4034.285736588666,
+            "delta_from_uniform": 3890.4310663185315
           },
           {
             "alpha": 0.5,
@@ -359,8 +323,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 2348.467720760782,
-            "delta_from_uniform": 2181.8597011271213
+            "metric_value": 2049.8267545145272,
+            "delta_from_uniform": 1905.9720842443924
           },
           {
             "alpha": 0.5,
@@ -368,8 +332,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 1575.336297237931,
-            "delta_from_uniform": 1408.7282776042703
+            "metric_value": 1371.3997507060253,
+            "delta_from_uniform": 1227.5450804358904
           },
           {
             "alpha": 0.8,
@@ -377,7 +341,7 @@
             "method_id": "activation_aware_uniform",
             "method_label": "Activation-aware uniform",
             "metric": "perplexity",
-            "metric_value": 19.563288806022253,
+            "metric_value": 18.015194037585015,
             "delta_from_uniform": 0.0
           },
           {
@@ -386,8 +350,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 1062.2254168527083,
-            "delta_from_uniform": 1042.6621280466861
+            "metric_value": 954.0804380848033,
+            "delta_from_uniform": 936.0652440472182
           },
           {
             "alpha": 0.8,
@@ -395,8 +359,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 290.0803796277454,
-            "delta_from_uniform": 270.5170908217232
+            "metric_value": 254.75133400806556,
+            "delta_from_uniform": 236.73613997048054
           },
           {
             "alpha": 0.8,
@@ -404,8 +368,8 @@
             "method_id": "activation_aware_layerwise",
             "method_label": "Activation-aware layerwise",
             "metric": "perplexity",
-            "metric_value": 156.21341628537098,
-            "delta_from_uniform": 136.65012747934873
+            "metric_value": 132.43759604284145,
+            "delta_from_uniform": 114.42240200525643
           }
         ]
       }
@@ -430,145 +394,145 @@
         "base_model_id": "Llama-3.2-1B",
         "alpha": 0.5,
         "w": 0.25,
-        "delta_average_nll": 2.644436779986191
+        "delta_average_nll": 2.565332926143296
       },
       {
         "base_model_id": "Llama-3.2-1B",
         "alpha": 0.5,
         "w": 0.5,
-        "delta_average_nll": 2.4324252105519983
+        "delta_average_nll": 2.4355283529166183
       },
       {
         "base_model_id": "Llama-3.2-1B",
         "alpha": 0.5,
         "w": 0.75,
-        "delta_average_nll": 2.3283656773536645
+        "delta_average_nll": 2.3125772020502255
       },
       {
         "base_model_id": "Qwen2.5-1.5B",
         "alpha": 0.5,
         "w": 0.25,
-        "delta_average_nll": 2.6840484648177334
+        "delta_average_nll": 2.6838162525331377
       },
       {
         "base_model_id": "Qwen2.5-1.5B",
         "alpha": 0.5,
         "w": 0.5,
-        "delta_average_nll": 0.8792392982530215
+        "delta_average_nll": 0.8709988516305032
       },
       {
         "base_model_id": "Qwen2.5-1.5B",
         "alpha": 0.5,
         "w": 0.75,
-        "delta_average_nll": 0.6866583897188541
+        "delta_average_nll": 0.5302709860207457
       },
       {
         "base_model_id": "Qwen3-0.6B",
         "alpha": 0.5,
         "w": 0.25,
-        "delta_average_nll": 0.5364985600503083
+        "delta_average_nll": 0.6019007665754366
       },
       {
         "base_model_id": "Qwen3-0.6B",
         "alpha": 0.5,
         "w": 0.5,
-        "delta_average_nll": 0.14743479600521603
+        "delta_average_nll": 0.15964745582789597
       },
       {
         "base_model_id": "Qwen3-0.6B",
         "alpha": 0.5,
         "w": 0.75,
-        "delta_average_nll": 0.09462048904162756
+        "delta_average_nll": 0.07373808033606277
       },
       {
         "base_model_id": "SmolLM2-1.7B",
         "alpha": 0.5,
         "w": 0.25,
-        "delta_average_nll": 3.153370668996092
+        "delta_average_nll": 3.3337809923591744
       },
       {
         "base_model_id": "SmolLM2-1.7B",
         "alpha": 0.5,
         "w": 0.5,
-        "delta_average_nll": 2.6458744951219764
+        "delta_average_nll": 2.6567070028473267
       },
       {
         "base_model_id": "SmolLM2-1.7B",
         "alpha": 0.5,
         "w": 0.75,
-        "delta_average_nll": 2.246580184891995
+        "delta_average_nll": 2.254783657348561
       },
       {
         "base_model_id": "Llama-3.2-1B",
         "alpha": 0.8,
         "w": 0.25,
-        "delta_average_nll": 1.7506223897342768
+        "delta_average_nll": 1.7762894207752509
       },
       {
         "base_model_id": "Llama-3.2-1B",
         "alpha": 0.8,
         "w": 0.5,
-        "delta_average_nll": 3.098874529026916
+        "delta_average_nll": 3.033013372690425
       },
       {
         "base_model_id": "Llama-3.2-1B",
         "alpha": 0.8,
         "w": 0.75,
-        "delta_average_nll": 3.3139439505833606
+        "delta_average_nll": 3.329981595117147
       },
       {
         "base_model_id": "Qwen2.5-1.5B",
         "alpha": 0.8,
         "w": 0.25,
-        "delta_average_nll": 0.32033407623379073
+        "delta_average_nll": 0.27271097084542095
       },
       {
         "base_model_id": "Qwen2.5-1.5B",
         "alpha": 0.8,
         "w": 0.5,
-        "delta_average_nll": 0.11349577939018962
+        "delta_average_nll": 0.05561133489030601
       },
       {
         "base_model_id": "Qwen2.5-1.5B",
         "alpha": 0.8,
         "w": 0.75,
-        "delta_average_nll": 0.4587316339997485
+        "delta_average_nll": 0.40705649675598377
       },
       {
         "base_model_id": "Qwen3-0.6B",
         "alpha": 0.8,
         "w": 0.25,
-        "delta_average_nll": 0.49182025311507704
+        "delta_average_nll": 0.4140936909049704
       },
       {
         "base_model_id": "Qwen3-0.6B",
         "alpha": 0.8,
         "w": 0.5,
-        "delta_average_nll": 0.2325403112384743
+        "delta_average_nll": 0.14202650959198238
       },
       {
         "base_model_id": "Qwen3-0.6B",
         "alpha": 0.8,
         "w": 0.75,
-        "delta_average_nll": 0.19939936390276092
+        "delta_average_nll": 0.15557479885579983
       },
       {
         "base_model_id": "SmolLM2-1.7B",
         "alpha": 0.8,
         "w": 0.25,
-        "delta_average_nll": 3.9944666463620018
+        "delta_average_nll": 3.969532469512431
       },
       {
         "base_model_id": "SmolLM2-1.7B",
         "alpha": 0.8,
         "w": 0.5,
-        "delta_average_nll": 2.696503265865832
+        "delta_average_nll": 2.6490723935950196
       },
       {
         "base_model_id": "SmolLM2-1.7B",
         "alpha": 0.8,
         "w": 0.75,
-        "delta_average_nll": 2.077568335588803
+        "delta_average_nll": 1.9948960461898175
       }
     ]
   },
@@ -596,145 +560,145 @@
         "base_model_id": "Llama-3.2-1B",
         "alpha": 0.5,
         "w": 0.25,
-        "delta_average_nll": 2.644436779986191
+        "delta_average_nll": 2.565332926143296
       },
       {
         "base_model_id": "Llama-3.2-1B",
         "alpha": 0.5,
         "w": 0.5,
-        "delta_average_nll": 2.4324252105519983
+        "delta_average_nll": 2.4355283529166183
       },
       {
         "base_model_id": "Llama-3.2-1B",
         "alpha": 0.5,
         "w": 0.75,
-        "delta_average_nll": 2.3283656773536645
+        "delta_average_nll": 2.3125772020502255
       },
       {
         "base_model_id": "Qwen2.5-1.5B",
         "alpha": 0.5,
         "w": 0.25,
-        "delta_average_nll": 2.6840484648177334
+        "delta_average_nll": 2.6838162525331377
       },
       {
         "base_model_id": "Qwen2.5-1.5B",
         "alpha": 0.5,
         "w": 0.5,
-        "delta_average_nll": 0.8792392982530215
+        "delta_average_nll": 0.8709988516305032
       },
       {
         "base_model_id": "Qwen2.5-1.5B",
         "alpha": 0.5,
         "w": 0.75,
-        "delta_average_nll": 0.6866583897188541
+        "delta_average_nll": 0.5302709860207457
       },
       {
         "base_model_id": "Qwen3-0.6B",
         "alpha": 0.5,
         "w": 0.25,
-        "delta_average_nll": 0.5364985600503083
+        "delta_average_nll": 0.6019007665754366
       },
       {
         "base_model_id": "Qwen3-0.6B",
         "alpha": 0.5,
         "w": 0.5,
-        "delta_average_nll": 0.14743479600521603
+        "delta_average_nll": 0.15964745582789597
       },
       {
         "base_model_id": "Qwen3-0.6B",
         "alpha": 0.5,
         "w": 0.75,
-        "delta_average_nll": 0.09462048904162756
+        "delta_average_nll": 0.07373808033606277
       },
       {
         "base_model_id": "SmolLM2-1.7B",
         "alpha": 0.5,
         "w": 0.25,
-        "delta_average_nll": 3.153370668996092
+        "delta_average_nll": 3.3337809923591744
       },
       {
         "base_model_id": "SmolLM2-1.7B",
         "alpha": 0.5,
         "w": 0.5,
-        "delta_average_nll": 2.6458744951219764
+        "delta_average_nll": 2.6567070028473267
       },
       {
         "base_model_id": "SmolLM2-1.7B",
         "alpha": 0.5,
         "w": 0.75,
-        "delta_average_nll": 2.246580184891995
+        "delta_average_nll": 2.254783657348561
       },
       {
         "base_model_id": "Llama-3.2-1B",
         "alpha": 0.8,
         "w": 0.25,
-        "delta_average_nll": 1.7506223897342768
+        "delta_average_nll": 1.7762894207752509
       },
       {
         "base_model_id": "Llama-3.2-1B",
         "alpha": 0.8,
         "w": 0.5,
-        "delta_average_nll": 3.098874529026916
+        "delta_average_nll": 3.033013372690425
       },
       {
         "base_model_id": "Llama-3.2-1B",
         "alpha": 0.8,
         "w": 0.75,
-        "delta_average_nll": 3.3139439505833606
+        "delta_average_nll": 3.329981595117147
       },
       {
         "base_model_id": "Qwen2.5-1.5B",
         "alpha": 0.8,
         "w": 0.25,
-        "delta_average_nll": 0.32033407623379073
+        "delta_average_nll": 0.27271097084542095
       },
       {
         "base_model_id": "Qwen2.5-1.5B",
         "alpha": 0.8,
         "w": 0.5,
-        "delta_average_nll": 0.11349577939018962
+        "delta_average_nll": 0.05561133489030601
       },
       {
         "base_model_id": "Qwen2.5-1.5B",
         "alpha": 0.8,
         "w": 0.75,
-        "delta_average_nll": 0.4587316339997485
+        "delta_average_nll": 0.40705649675598377
       },
       {
         "base_model_id": "Qwen3-0.6B",
         "alpha": 0.8,
         "w": 0.25,
-        "delta_average_nll": 0.49182025311507704
+        "delta_average_nll": 0.4140936909049704
       },
       {
         "base_model_id": "Qwen3-0.6B",
         "alpha": 0.8,
         "w": 0.5,
-        "delta_average_nll": 0.2325403112384743
+        "delta_average_nll": 0.14202650959198238
       },
       {
         "base_model_id": "Qwen3-0.6B",
         "alpha": 0.8,
         "w": 0.75,
-        "delta_average_nll": 0.19939936390276092
+        "delta_average_nll": 0.15557479885579983
       },
       {
         "base_model_id": "SmolLM2-1.7B",
         "alpha": 0.8,
         "w": 0.25,
-        "delta_average_nll": 3.9944666463620018
+        "delta_average_nll": 3.969532469512431
       },
       {
         "base_model_id": "SmolLM2-1.7B",
         "alpha": 0.8,
         "w": 0.5,
-        "delta_average_nll": 2.696503265865832
+        "delta_average_nll": 2.6490723935950196
       },
       {
         "base_model_id": "SmolLM2-1.7B",
         "alpha": 0.8,
         "w": 0.75,
-        "delta_average_nll": 2.077568335588803
+        "delta_average_nll": 1.9948960461898175
       }
     ]
   }

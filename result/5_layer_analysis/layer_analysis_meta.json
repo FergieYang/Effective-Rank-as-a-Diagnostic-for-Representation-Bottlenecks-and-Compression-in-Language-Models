@@ -1,0 +1,40 @@
+{
+  "created_at": "2026-04-28T18:50:54",
+  "statistics_csvs": [
+    "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Llama-3.2-1B\\1_statistics\\layer_statistics.csv",
+    "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen2.5-1.5B\\1_statistics\\layer_statistics.csv",
+    "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen3-0.6B\\1_statistics\\layer_statistics.csv",
+    "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\SmolLM2-1.7B\\1_statistics\\layer_statistics.csv"
+  ],
+  "output_dir": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\5_layer_analysis",
+  "rank_signal_definition": "Per-model min-max normalized mean centered activation e-rank ratio, where the raw quantity is 0.5 * (mlp_input_effective_rank_centered_ratio + mlp_output_effective_rank_centered_ratio).",
+  "trace_signal_definition": "Per-model min-max normalized mlp_output_uncentered_trace_log.",
+  "trend_plot_depth_definition": "Layer index normalized to [0, 1] within each model.",
+  "pooled_normalized_rank_trace_pearson": -0.6946716920228647,
+  "correlations": [
+    {
+      "base_model_id": "Llama-3.2-1B",
+      "num_layers": 16,
+      "normalized_rank_trace_pearson": -0.723168127905159,
+      "statistics_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Llama-3.2-1B\\1_statistics\\layer_statistics.csv"
+    },
+    {
+      "base_model_id": "Qwen2.5-1.5B",
+      "num_layers": 28,
+      "normalized_rank_trace_pearson": -0.7297814819963313,
+      "statistics_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen2.5-1.5B\\1_statistics\\layer_statistics.csv"
+    },
+    {
+      "base_model_id": "Qwen3-0.6B",
+      "num_layers": 28,
+      "normalized_rank_trace_pearson": -0.7638168824706744,
+      "statistics_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen3-0.6B\\1_statistics\\layer_statistics.csv"
+    },
+    {
+      "base_model_id": "SmolLM2-1.7B",
+      "num_layers": 24,
+      "normalized_rank_trace_pearson": -0.7397951716986093,
+      "statistics_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\SmolLM2-1.7B\\1_statistics\\layer_statistics.csv"
+    }
+  ]
+}

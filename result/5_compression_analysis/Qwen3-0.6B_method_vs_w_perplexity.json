@@ -1,0 +1,218 @@
+{
+  "created_at": "2026-04-28T19:40:24",
+  "benchmark_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen3-0.6B\\4_benchmark\\perplexity_benchmark.csv",
+  "output_dir": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\5_compression_analysis",
+  "plot_definition": "Vertically stacked subplots by alpha with w on the x-axis and the selected benchmark metric on the y-axis. Activation-aware uniform is shown as a horizontal baseline, activation-aware layerwise is shown as the varying series, and point annotations show the layerwise delta relative to uniform.",
+  "rank_budget_tag_parsing_note": "alpha and w are read from explicit benchmark columns when available, and otherwise recovered from rank_budget_tag as a fallback. Uniform methods may use alpha-only rank_budget_tag values.",
+  "plot_meta": {
+    "base_model_id": "Qwen3-0.6B",
+    "metric": "perplexity",
+    "alpha_values": [
+      0.5,
+      0.8
+    ],
+    "methods": [
+      "activation_aware_uniform",
+      "activation_aware_layerwise"
+    ],
+    "output_png": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\5_compression_analysis\\Qwen3-0.6B_method_vs_w_perplexity.png",
+    "output_svg": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\5_compression_analysis\\Qwen3-0.6B_method_vs_w_perplexity.svg",
+    "rows": [
+      {
+        "alpha": 0.5,
+        "w": 0.25,
+        "method_id": "activation_aware_uniform",
+        "method_label": "Activation-aware uniform",
+        "metric": "perplexity",
+        "metric_value": 154.6021980227486,
+        "delta_from_uniform": 0.0
+      },
+      {
+        "alpha": 0.5,
+        "w": 0.5,
+        "method_id": "activation_aware_uniform",
+        "method_label": "Activation-aware uniform",
+        "metric": "perplexity",
+        "metric_value": 154.6021980227486,
+        "delta_from_uniform": 0.0
+      },
+      {
+        "alpha": 0.5,
+        "w": 0.75,
+        "method_id": "activation_aware_uniform",
+        "method_label": "Activation-aware uniform",
+        "metric": "perplexity",
+        "metric_value": 154.6021980227486,
+        "delta_from_uniform": 0.0
+      },
+      {
+        "alpha": 0.5,
+        "w": 0.25,
+        "method_id": "activation_aware_layerwise",
+        "method_label": "Activation-aware layerwise",
+        "metric": "perplexity",
+        "metric_value": 264.37113057877093,
+        "delta_from_uniform": 109.76893255602232
+      },
+      {
+        "alpha": 0.5,
+        "w": 0.5,
+        "method_id": "activation_aware_layerwise",
+        "method_label": "Activation-aware layerwise",
+        "metric": "perplexity",
+        "metric_value": 179.16195074063486,
+        "delta_from_uniform": 24.559752717886255
+      },
+      {
+        "alpha": 0.5,
+        "w": 0.75,
+        "method_id": "activation_aware_layerwise",
+        "method_label": "Activation-aware layerwise",
+        "metric": "perplexity",
+        "metric_value": 169.94516778415039,
+        "delta_from_uniform": 15.342969761401775
+      },
+      {
+        "alpha": 0.8,
+        "w": 0.25,
+        "method_id": "activation_aware_uniform",
+        "method_label": "Activation-aware uniform",
+        "metric": "perplexity",
+        "metric_value": 61.443325380308245,
+        "delta_from_uniform": 0.0
+      },
+      {
+        "alpha": 0.8,
+        "w": 0.5,
+        "method_id": "activation_aware_uniform",
+        "method_label": "Activation-aware uniform",
+        "metric": "perplexity",
+        "metric_value": 61.443325380308245,
+        "delta_from_uniform": 0.0
+      },
+      {
+        "alpha": 0.8,
+        "w": 0.75,
+        "method_id": "activation_aware_uniform",
+        "method_label": "Activation-aware uniform",
+        "metric": "perplexity",
+        "metric_value": 61.443325380308245,
+        "delta_from_uniform": 0.0
+      },
+      {
+        "alpha": 0.8,
+        "w": 0.25,
+        "method_id": "activation_aware_layerwise",
+        "method_label": "Activation-aware layerwise",
+        "metric": "perplexity",
+        "metric_value": 100.47766505263407,
+        "delta_from_uniform": 39.03433967232582
+      },
+      {
+        "alpha": 0.8,
+        "w": 0.5,
+        "method_id": "activation_aware_layerwise",
+        "method_label": "Activation-aware layerwise",
+        "metric": "perplexity",
+        "metric_value": 77.52926846222256,
+        "delta_from_uniform": 16.085943081914316
+      },
+      {
+        "alpha": 0.8,
+        "w": 0.75,
+        "method_id": "activation_aware_layerwise",
+        "method_label": "Activation-aware layerwise",
+        "metric": "perplexity",
+        "metric_value": 75.00198465898389,
+        "delta_from_uniform": 13.558659278675641
+      }
+    ]
+  },
+  "all_models_aggregate_plot_meta": {
+    "metric": "delta_average_nll",
+    "alpha_values": [
+      0.5,
+      0.8
+    ],
+    "base_model_ids": [
+      "Qwen2.5-1.5B",
+      "Qwen3-0.6B"
+    ],
+    "output_png": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\5_compression_analysis\\all_models_delta_nll_vs_w.png",
+    "output_svg": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\5_compression_analysis\\all_models_delta_nll_vs_w.svg",
+    "rows": [
+      {
+        "base_model_id": "Qwen2.5-1.5B",
+        "alpha": 0.5,
+        "w": 0.25,
+        "delta_average_nll": 2.6840484648177334
+      },
+      {
+        "base_model_id": "Qwen2.5-1.5B",
+        "alpha": 0.5,
+        "w": 0.5,
+        "delta_average_nll": 0.8792392982530215
+      },
+      {
+        "base_model_id": "Qwen2.5-1.5B",
+        "alpha": 0.5,
+        "w": 0.75,
+        "delta_average_nll": 0.6866583897188541
+      },
+      {
+        "base_model_id": "Qwen3-0.6B",
+        "alpha": 0.5,
+        "w": 0.25,
+        "delta_average_nll": 0.5364985600503083
+      },
+      {
+        "base_model_id": "Qwen3-0.6B",
+        "alpha": 0.5,
+        "w": 0.5,
+        "delta_average_nll": 0.14743479600521603
+      },
+      {
+        "base_model_id": "Qwen3-0.6B",
+        "alpha": 0.5,
+        "w": 0.75,
+        "delta_average_nll": 0.09462048904162756
+      },
+      {
+        "base_model_id": "Qwen2.5-1.5B",
+        "alpha": 0.8,
+        "w": 0.25,
+        "delta_average_nll": 0.32033407623379073
+      },
+      {
+        "base_model_id": "Qwen2.5-1.5B",
+        "alpha": 0.8,
+        "w": 0.5,
+        "delta_average_nll": 0.11349577939018962
+      },
+      {
+        "base_model_id": "Qwen2.5-1.5B",
+        "alpha": 0.8,
+        "w": 0.75,
+        "delta_average_nll": 0.4587316339997485
+      },
+      {
+        "base_model_id": "Qwen3-0.6B",
+        "alpha": 0.8,
+        "w": 0.25,
+        "delta_average_nll": 0.49182025311507704
+      },
+      {
+        "base_model_id": "Qwen3-0.6B",
+        "alpha": 0.8,
+        "w": 0.5,
+        "delta_average_nll": 0.2325403112384743
+      },
+      {
+        "base_model_id": "Qwen3-0.6B",
+        "alpha": 0.8,
+        "w": 0.75,
+        "delta_average_nll": 0.19939936390276092
+      }
+    ]
+  }
+}

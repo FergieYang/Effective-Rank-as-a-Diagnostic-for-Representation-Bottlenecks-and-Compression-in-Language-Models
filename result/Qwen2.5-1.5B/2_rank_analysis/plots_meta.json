@@ -1,0 +1,10 @@
+{
+  "created_at": "2026-04-28T16:42:31",
+  "base_model_dir": "artifact\\models\\Qwen2.5-1.5B\\base",
+  "base_model_id": "Qwen2.5-1.5B",
+  "statistics_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen2.5-1.5B\\1_statistics\\layer_statistics.csv",
+  "output_dir": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen2.5-1.5B\\2_rank_analysis",
+  "compressibility_summary_definition": "Mean of mlp_input_effective_rank_centered_ratio and mlp_output_effective_rank_centered_ratio.",
+  "importance_summary_definition": "Min-max normalized mlp_output_uncentered_trace_log. Used only for stage-2 overlay visualization.",
+  "importance_profile_note": "Raw mlp_output_uncentered_trace_log is the main v3 importance signal. Residual-stream log trace is included only as a diagnostic reference."
+}

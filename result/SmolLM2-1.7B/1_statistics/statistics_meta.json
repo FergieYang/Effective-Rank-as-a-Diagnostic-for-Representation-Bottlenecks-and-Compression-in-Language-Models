@@ -1,0 +1,33 @@
+{
+  "created_at": "2026-04-28T16:35:52",
+  "model_path": "artifact\\models\\SmolLM2-1.7B\\base",
+  "data_path": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\data\\wikitext2\\train.txt",
+  "output_dir": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\SmolLM2-1.7B\\1_statistics",
+  "device": "cuda",
+  "stats_device": "cuda",
+  "merge_device": "cuda",
+  "torch_dtype": "auto",
+  "num_layers": 24,
+  "max_length": 512,
+  "batch_size": 1,
+  "max_token_samples": 65536,
+  "num_windows": 128,
+  "weight_blocks": [
+    "mlp.gate_proj",
+    "mlp.up_proj"
+  ],
+  "weight_effective_rank_definition": "Weight effective rank is computed from singular values directly using exp(-sum_i p_i log p_i), where p_i = sigma_i / sum_j sigma_j.",
+  "centered_effective_rank_definition": "Centered effective rank is computed from covariance eigenvalues using exp(-sum_i p_i log p_i), where p_i are normalized covariance eigenvalues.",
+  "uncentered_effective_rank_definition": "Uncentered effective rank is computed from second-moment eigenvalues using exp(-sum_i p_i log p_i), where p_i are normalized eigenvalues of E[x x^T].",
+  "trace_definition": "Uncentered trace is the trace of the empirical second moment E[x x^T], equivalently the per-token mean squared norm E[||x||^2].",
+  "log_definition": "All *_log columns use the natural logarithm.",
+  "main_importance_signal_definition": "The main v3 importance or energy signal is mlp_output_uncentered_trace_log, the natural log of the MLP output uncentered trace.",
+  "mlp_input_definition": "MLP input is collected at post_attention_layernorm output, which is the normalized input seen by mlp.gate_proj and mlp.up_proj.",
+  "mlp_output_definition": "MLP output is collected at layer.mlp output, which is the contribution added to the residual stream.",
+  "residual_stream_definition": "Residual stream is collected from the input to post_attention_layernorm, immediately before the MLP input normalization step.",
+  "residual_relative_trace_note": "Residual-relative trace columns are retained only as diagnostics. They are not treated as the main cross-layer importance signal because the residual stream magnitude is path-dependent and can be distorted by earlier outlier layers.",
+  "cached_second_moment_files": [
+    "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\SmolLM2-1.7B\\1_statistics\\mlp_input_second_moments.pt",
+    "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\SmolLM2-1.7B\\1_statistics\\mlp_output_second_moments.pt"
+  ]
+}

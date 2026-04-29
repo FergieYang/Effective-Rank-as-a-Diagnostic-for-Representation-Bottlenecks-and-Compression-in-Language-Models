@@ -1,0 +1,9 @@
+# Downloaded model artifacts
+artifact/models/
+
+*.pt
+
+# Local caches
+**/.cache/
+__pycache__/
+*.py[cod]

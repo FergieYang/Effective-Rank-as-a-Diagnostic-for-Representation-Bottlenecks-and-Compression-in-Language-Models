@@ -1,0 +1,68 @@
+
+# Stage 0, download model and data
+
+hf auth login
+python script/0_download_model.py --model-id Qwen/Qwen3-0.6B
+python script/0_download_model.py --model-id Qwen/Qwen2.5-1.5B
+python script/0_download_model.py --model-id HuggingFaceTB/SmolLM2-1.7B
+python script/0_download_model.py --model-id meta-llama/Llama-3.2-1B
+
+python script/0_download_data.py
+
+
+# Stage 1, collect statistics
+
+python script/1_collect_statistics.py --model-path artifact/models/Qwen3-0.6B/base
+python script/1_collect_statistics.py --model-path artifact/models/Qwen2.5-1.5B/base
+python script/1_collect_statistics.py --model-path artifact/models/SmolLM2-1.7B/base
+python script/1_collect_statistics.py --model-path artifact/models/Llama-3.2-1B/base
+
+
+# Stage 2, rank analysis plots
+
+python script/2_plot_statistics.py --base-model-dir artifact/models/Qwen3-0.6B/base
+python script/2_plot_statistics.py --base-model-dir artifact/models/Qwen2.5-1.5B/base
+python script/2_plot_statistics.py --base-model-dir artifact/models/SmolLM2-1.7B/base
+python script/2_plot_statistics.py --base-model-dir artifact/models/Llama-3.2-1B/base
+
+
+# Stage 3, compute rank budgets
+
+python script/3_compute_rank_budgets.py --base-model-dir artifact/models/Qwen3-0.6B/base --alpha 0.50 0.80 --w 0.25 0.50 0.75
+python script/3_compute_rank_budgets.py --base-model-dir artifact/models/Qwen2.5-1.5B/base --alpha 0.50 0.80 --w 0.25 0.50 0.75
+python script/3_compute_rank_budgets.py --base-model-dir artifact/models/SmolLM2-1.7B/base --alpha 0.50 0.80 --w 0.25 0.50 0.75
+python script/3_compute_rank_budgets.py --base-model-dir artifact/models/Llama-3.2-1B/base --alpha 0.50 0.80 --w 0.25 0.50 0.75
+
+
+# Stage 3, build compressed models for all existing budget CSVs
+
+python script/3_compress_models.py --base-model-dir artifact/models/Qwen3-0.6B/base
+python script/3_compress_models.py --base-model-dir artifact/models/Qwen2.5-1.5B/base
+python script/3_compress_models.py --base-model-dir artifact/models/SmolLM2-1.7B/base
+python script/3_compress_models.py --base-model-dir artifact/models/Llama-3.2-1B/base
+
+
+# Stage 4, benchmark perplexity
+
+python script/4_benchmark_perplexity.py --base-model-dir artifact/models/Qwen3-0.6B/base --max-windows 64
+python script/4_benchmark_perplexity.py --base-model-dir artifact/models/Qwen2.5-1.5B/base --max-windows 64
+python script/4_benchmark_perplexity.py --base-model-dir artifact/models/SmolLM2-1.7B/base --max-windows 64
+python script/4_benchmark_perplexity.py --base-model-dir artifact/models/Llama-3.2-1B/base --max-windows 64
+
+
+# Stage 5, layer analysis
+
+python script/5_layer_analysis.py
+
+
+# Stage 5, compression analysis
+
+python script/5_compression_analysis.py 
+
+
+
+
+
+
+
+

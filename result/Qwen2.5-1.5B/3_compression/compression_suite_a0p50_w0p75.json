@@ -1,0 +1,36 @@
+{
+  "created_at": "2026-04-28T19:17:39",
+  "base_model_dir": "artifact\\models\\Qwen2.5-1.5B\\base",
+  "base_model_id": "Qwen2.5-1.5B",
+  "rank_budget_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen2.5-1.5B\\3_compression\\rank_budgets_a0p50_w0p75.csv",
+  "rank_budget_tag": "a0p50_w0p75",
+  "second_moment_cache": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen2.5-1.5B\\1_statistics\\mlp_input_second_moments.pt",
+  "device": "cuda",
+  "save_dtype": "original",
+  "overwrite_existing": false,
+  "methods_requested": [
+    "plain_svd_uniform",
+    "activation_aware_uniform",
+    "activation_aware_layerwise"
+  ],
+  "results": [
+    {
+      "method_id": "plain_svd_uniform",
+      "status": "reused_existing_uniform",
+      "output_dir": "artifact\\models\\Qwen2.5-1.5B\\plain_svd_uniform\\a0p50"
+    },
+    {
+      "method_id": "activation_aware_uniform",
+      "status": "reused_existing_uniform",
+      "output_dir": "artifact\\models\\Qwen2.5-1.5B\\activation_aware_uniform\\a0p50"
+    },
+    {
+      "method_id": "activation_aware_layerwise",
+      "status": "compressed",
+      "output_dir": "artifact\\models\\Qwen2.5-1.5B\\activation_aware_layerwise\\a0p50_w0p75",
+      "plan_csv": "artifact\\models\\Qwen2.5-1.5B\\activation_aware_layerwise\\a0p50_w0p75\\compression_plan.csv",
+      "compression_meta": "artifact\\models\\Qwen2.5-1.5B\\activation_aware_layerwise\\a0p50_w0p75\\compression_meta.json",
+      "targeted_factorized_param_ratio": 0.500297619047619
+    }
+  ]
+}

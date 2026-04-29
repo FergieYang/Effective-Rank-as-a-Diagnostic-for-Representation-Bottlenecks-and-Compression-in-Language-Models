@@ -1,0 +1,29 @@
+{
+  "created_at": "2026-04-28T17:21:00",
+  "base_model_dir": "artifact\\models\\Qwen3-0.6B\\base",
+  "statistics_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen3-0.6B\\1_statistics\\layer_statistics.csv",
+  "output_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen3-0.6B\\3_compression\\rank_budgets_a0p80_w0p50.csv",
+  "output_json": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\Qwen3-0.6B\\3_compression\\rank_budgets_a0p80_w0p50.json",
+  "rank_budget_tag": "a0p80_w0p50",
+  "rounding": "round",
+  "model_dimensions": {
+    "hidden_size": 1024,
+    "intermediate_size": 3072,
+    "max_rank": 1024,
+    "target_module_original_params": 3145728,
+    "target_module_factorized_params_per_rank": 4096
+  },
+  "base_model_id": "Qwen3-0.6B",
+  "alpha": 0.8,
+  "w": 0.5,
+  "num_layers": 28,
+  "requested_uniform_rank": 614.4000000000001,
+  "uniform_rank": 614,
+  "uniform_total_rank_budget": 17192,
+  "layerwise_total_rank_budget": 17192,
+  "actual_factorized_param_ratio": 0.7994791666666666,
+  "rank_signal_definition": "Min-max normalized mean centered activation e-rank ratio. The raw pre-normalized quantity is 0.5 * (mlp_input_effective_rank_centered_ratio + mlp_output_effective_rank_centered_ratio).",
+  "importance_signal_definition": "Min-max normalized mlp_output_uncentered_trace_log",
+  "protection_score_definition": "w * rank_signal + (1 - w) * importance_signal",
+  "normalization_note": "Both rank_signal and importance_signal are min-max normalized before the additive mix so that w has a more interpretable effect on the balance between the two signals."
+}

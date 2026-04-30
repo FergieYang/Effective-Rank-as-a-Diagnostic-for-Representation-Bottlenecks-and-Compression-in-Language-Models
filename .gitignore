@@ -1,3 +1,5 @@
+.DS_Store
+
 # Downloaded model artifacts
 artifact/models/
 
@@ -13,5 +15,6 @@ __pycache__/
 *.aux
 *.log
 *.out
+*.toc
 *.fls
 *.fdb_latexmk

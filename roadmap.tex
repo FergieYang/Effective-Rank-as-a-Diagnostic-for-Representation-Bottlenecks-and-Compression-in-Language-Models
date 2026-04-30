@@ -1,0 +1,927 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{titlesec}
+
+\geometry{margin=1in}
+\hypersetup{colorlinks=true, linkcolor=blue!70!black, citecolor=green!50!black, urlcolor=blue!60!black}
+
+% --- Custom environments ---
+\newtcolorbox{criticalbox}{colback=red!5!white, colframe=red!70!black, title=Critical Issue, fonttitle=\bfseries}
+\newtcolorbox{warningbox}{colback=orange!5!white, colframe=orange!70!black, title=Warning, fonttitle=\bfseries}
+\newtcolorbox{fixbox}{colback=green!5!white, colframe=green!60!black, title=Proposed Fix, fonttitle=\bfseries}
+\newtcolorbox{insightbox}{colback=blue!5!white, colframe=blue!60!black, title=Key Insight, fonttitle=\bfseries}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+
+\title{\textbf{Critical Review, Domain Knowledge Analysis, and Execution Roadmap} \\[6pt]
+\large For: ``Effective Rank as a Diagnostic for Representation Bottlenecks \\
+and Compression in Language Models''}
+\author{Fergie Yang \quad \& \quad Peng Zhao \\
+\small Center for Data Science, New York University \\
+\small PSYCH-GA 3505 / DS-GA 3001: Information Theory and Cognition \\
+\small Instructor: Noga Zaslavsky \quad TA: Moufan Li}
+\date{April 19, 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% ============================================================
+% PART 1: CRITICAL REVIEW
+% ============================================================
+\part{Critical Review of the Proposal}
+
+This section identifies restraints, naive assumptions, methodological gaps, and missing connections in the current proposal. Each issue is rated by severity and accompanied by a concrete fix.
+
+% ------------------------------------------------------------
+\section{Critical Flaw \#1: No Connection to Cognition}
+% ------------------------------------------------------------
+
+\begin{criticalbox}
+The course is titled ``Information Theory \textbf{and Cognition}.'' The proposal is a pure ML/systems paper with zero mention of cognition, perception, efficient coding, or cognitive bottlenecks.
+\end{criticalbox}
+
+\subsection{Why This Matters}
+
+The instructor, Noga Zaslavsky, completed her PhD under Naftali Tishby---the inventor of the Information Bottleneck (IB) method. She co-authored the influential paper ``Deep Learning and the Information Bottleneck Principle'' \cite{tishby2015deep}. Her primary research program uses the IB framework to explain how human languages efficiently compress meanings into words \cite{zaslavsky2018efficient}. A project submitted to her course without any cognitive science connection is fundamentally misaligned with the course objectives.
+
+\subsection{What the Proposal Should Connect To}
+
+\begin{enumerate}[label=(\alph*)]
+    \item \textbf{LLMs as cognitive models.} Do LLMs, trained to model human language, develop internal representations that show bottleneck structures similar to those hypothesized in cognitive systems? If effective rank profiles show a U-shaped pattern across layers (compression in middle layers, expansion in later layers), this would parallel the compression-then-expansion architecture of biological neural systems (retina $\to$ LGN $\to$ V1).
+
+    \item \textbf{Efficient coding hypothesis} (Barlow, 1961) \cite{barlow1961possible}. Neural systems efficiently encode sensory information by reducing statistical redundancy. The question ``do trained LLMs develop low effective rank representations?'' is equivalent to asking whether artificial networks learn efficient codes.
+
+    \item \textbf{Cognitive compression under resource constraints.} Human cognition operates under severe resource constraints (limited attention, bounded working memory $\sim$4 items). Post-training quantization of LLMs is an artificial analog: which layers can tolerate aggressive ``cognitive'' compression? This frames our investigation as studying the robustness of learned representations to resource limitations---a core question in cognitive science.
+
+    \item \textbf{Zaslavsky's own framework.} Language itself is a compression of the continuous space of meanings into a finite lexicon. An LLM trained on language should reflect this compression structure internally. Layers with low effective rank may correspond to layers that have learned the most IB-optimal representations of meaning.
+\end{enumerate}
+
+\begin{fixbox}
+Add a section explicitly framing the project as investigating whether LLMs develop efficient, bottleneck-structured representations analogous to those found in cognitive systems. Connect effective rank to the IB complexity term $I(T;X)$ and cognitive resource constraints.
+\end{fixbox}
+
+% ------------------------------------------------------------
+\section{Critical Flaw \#2: No Information Bottleneck Framework}
+% ------------------------------------------------------------
+
+\begin{criticalbox}
+Spectral entropy is used as a descriptive statistic, never embedded in a formal information-theoretic framework. The proposal never mentions mutual information, the IB tradeoff, or rate-distortion theory.
+\end{criticalbox}
+
+\subsection{The Information Bottleneck Framework}
+
+The IB method \cite{tishby1999information} formalizes optimal compression: given input $X$ and relevant variable $Y$, find a compressed representation $T$ that minimizes $I(T; X)$ (complexity) while maximizing $I(T; Y)$ (informativeness):
+\begin{equation}
+    \mathcal{L}_{\text{IB}} = I(T; X) - \beta \cdot I(T; Y).
+\end{equation}
+
+Tishby \& Zaslavsky (2015) \cite{tishby2015deep} argued that each layer of a DNN can be viewed as an IB representation, and the optimal architecture corresponds to bifurcation points on the IB tradeoff curve.
+
+\subsection{Effective Rank as an IB Proxy}
+
+\begin{insightbox}
+A recent paper, ``The Inductive Bottleneck: Data-Driven Emergence of Representational Sparsity in Vision Transformers'' (arXiv:2512.07331) \cite{inductivebottleneck2025}, provides the missing bridge. It uses Effective Encoding Dimension (EED)---defined identically to Roy \& Vetterli's effective rank---as a tractable proxy for $I(T;X)$ when exact mutual information is intractable in high-dimensional continuous spaces.
+\end{insightbox}
+
+The connection works as follows. For a representation $T$ with covariance $\Sigma_T$ having eigenvalues $\{\lambda_i\}$:
+\begin{itemize}
+    \item The differential entropy is $h(T) = \frac{1}{2}\log\bigl((2\pi e)^d \det(\Sigma_T)\bigr) = \frac{1}{2}d\log(2\pi e) + \frac{1}{2}\sum_i \log \lambda_i$.
+    \item $I(T; X) = h(T) - h(T|X)$. When $h(T|X)$ is approximately constant across layers (noise level), $I(T;X)$ scales with $h(T)$, which depends on the eigenvalue spectrum.
+    \item Low effective rank $\Rightarrow$ concentrated eigenvalue spectrum $\Rightarrow$ low $h(T)$ $\Rightarrow$ low $I(T;X)$ $\Rightarrow$ strong compression in the IB sense.
+\end{itemize}
+
+The Inductive Bottleneck paper \cite{inductivebottleneck2025} showed that Vision Transformers develop a \textbf{U-shaped effective rank profile} across layers: compressing representations in middle layers and expanding in later layers, analogous to the IB compression phase.
+
+\subsection{Rate-Distortion Theory Connection}
+
+For a Gaussian source with covariance eigenvalues $\{\lambda_i\}$, the rate-distortion function under squared error is given by reverse waterfilling \cite{shannon1959coding, cover2006elements}:
+\begin{equation}
+    R(D) = \sum_{i} \max\!\left(0,\;\frac{1}{2}\log\frac{\lambda_i}{\theta}\right),
+\end{equation}
+where $\theta$ is chosen so that $\sum_i \min(\lambda_i, \theta) = D$. When the eigenvalue spectrum is concentrated (low effective rank), fewer eigenvalues exceed the threshold $\theta$, so $R(D)$ is lower---fewer bits are needed to represent the source at distortion $D$.
+
+\begin{fixbox}
+Frame $r_u$ explicitly as bounding the IB complexity $I(T;X)$. State the Gaussian waterfilling result and explain how effective rank connects to $R(D)$. This provides the formal information-theoretic foundation the proposal currently lacks.
+\end{fixbox}
+
+% ------------------------------------------------------------
+\section{Methodological Issue: $\sigma$ vs.\ $\sigma^2$ Asymmetry}
+% ------------------------------------------------------------
+
+\begin{warningbox}
+The two effective ranks $r_u$ and $r_w$ in the proposal are computed using \textbf{different normalization schemes}, but this asymmetry is never acknowledged or justified.
+\end{warningbox}
+
+\subsection{The Problem}
+
+The proposal computes:
+\begin{itemize}
+    \item \textbf{Activation effective rank} $r_u$: from eigenvalues $\lambda_i$ of $U^T U$ (covariance). Since $\lambda_i = \sigma_i^2(U)$, this normalizes by $p_i = \sigma_i^2 / \sum_j \sigma_j^2$.
+    \item \textbf{Weight effective rank} $r_w$: from singular values $\sigma_i$ of $W$ directly, normalizing by $p_i = \sigma_i / \sum_j \sigma_j$.
+\end{itemize}
+
+These are fundamentally different measures. Roy \& Vetterli's original definition \cite{roy2007effective} uses singular values directly ($p_i = \sigma_i / \sum_j \sigma_j$), which is consistent with $r_w$. But $r_u$ uses squared singular values because it operates on the covariance matrix. Comparing $r_u$ and $r_w$ directly (as in step 5b: ``a large $r_u$ with a small $r_w$ may indicate a bottleneck'') requires them to be on comparable scales.
+
+\subsection{Impact}
+
+For a matrix with singular values $[10, 1, 1, 1]$:
+\begin{itemize}
+    \item Using $\sigma_i$: $p = [10/13, 1/13, 1/13, 1/13]$, $r_{\text{eff}} \approx 1.80$.
+    \item Using $\sigma_i^2$: $p = [100/103, 1/103, 1/103, 1/103]$, $r_{\text{eff}} \approx 1.12$.
+\end{itemize}
+
+The squared version is more sensitive to dominant directions and yields lower effective rank. This means $r_u$ and $r_w$ are not directly comparable even when computed on matrices of the same size.
+
+\begin{fixbox}
+Two options: (a) Compute both $r_u$ and $r_w$ using the same convention (e.g., both from singular values, or both from squared singular values via Gram matrices). (b) Acknowledge the asymmetry and provide a principled interpretation for why comparing them is still informative despite the different scales.
+\end{fixbox}
+
+% ------------------------------------------------------------
+\section{Naive Assumption \#1: Effective Rank Predicts Quantization Performance}
+% ------------------------------------------------------------
+
+\begin{warningbox}
+The proposal claims (step 5d) that layers with low effective rank should get lower-bit quantization. This relationship is \textbf{not established} in the literature and has several theoretical problems.
+\end{warningbox}
+
+\subsection{What Actually Determines Quantization Sensitivity}
+
+The literature identifies four primary factors:
+
+\begin{enumerate}
+    \item \textbf{Activation outliers} (primary driver). Dettmers et al.\ (LLM.int8(), 2022) showed that a small number of ``outlier features'' have activation magnitudes 10--100$\times$ larger than typical dimensions. AWQ \cite{lin2023awq} demonstrated that protecting only 1\% of salient weight channels (identified through activation magnitudes) greatly reduces quantization error. KurTail (EMNLP 2025) uses kurtosis of activation distributions as the key metric.
+
+    \item \textbf{Hessian spectrum / Fisher information}. GPTQ \cite{frantar2022gptq} minimizes layer-wise reconstruction error using $H = XX^T$ (the activation covariance---exactly the matrix whose eigenspectrum defines $r_u$). Fisher Information captures loss sensitivity, not just spectral entropy.
+
+    \item \textbf{Activation-weight interaction}. The joint distribution matters, not independent analysis of weights and activations. AWQ uses activation statistics to identify salient weight channels; ASVD \cite{yuan2023asvd} transforms weights based on activation distribution before SVD.
+
+    \item \textbf{Layer position}. First and last layers are consistently more sensitive. The pattern is architecture-dependent, not captured by effective rank alone.
+\end{enumerate}
+
+\subsection{Why Effective Rank Is Insufficient}
+
+\begin{enumerate}[label=(\roman*)]
+    \item \textbf{Quantization error depends on activation-weighted reconstruction.} The relevant error is $\|Wx - Q(W)x\|_2$, not $\|W - Q(W)\|_F$. A layer could have low effective rank but be extremely sensitive if the dominant directions carry critical information.
+
+    \item \textbf{Effective rank is a scalar summary.} Two matrices with the same effective rank can have very different quantization sensitivity. Matrix A: $\sigma = [100, 0.001, \ldots, 0.001]$ vs.\ Matrix B: $\sigma = [100, 0.1, \ldots, 0.1]$ --- similar $r_{\text{eff}}$ but Matrix B has much more energy in the tail.
+
+    \item \textbf{Magnitude information is lost.} The normalization $p_i = \sigma_i / \sum_j \sigma_j$ discards absolute scale. A layer with large singular values and low effective rank may have higher quantization error than one with small singular values and high effective rank.
+\end{enumerate}
+
+\begin{insightbox}
+\textbf{Key connection the proposal misses:} The GPTQ Hessian $H = XX^T$ is exactly the activation covariance matrix. Its eigenvalues are the $\lambda_i$ in the proposal's $r_u$ computation. Thus, \textbf{the effective rank of activations is the spectral entropy of the GPTQ Hessian.} This powerful connection should be emphasized and explored.
+\end{insightbox}
+
+\begin{fixbox}
+Frame the effective-rank-to-quantization link as an \textbf{empirical hypothesis} to be tested, not an assumed truth. Compare effective rank against established sensitivity metrics (Hessian trace, activation kurtosis, outlier magnitude) as quantization predictors. Emphasize the GPTQ Hessian connection.
+\end{fixbox}
+
+% ------------------------------------------------------------
+\section{Naive Assumption \#2: Low-Rank Factorization via Naive SVD}
+% ------------------------------------------------------------
+
+The proposal suggests $Wu \approx W V_{r_u} V_{r_u}^T u$, truncating at rank $r_u$. This is naive for three reasons:
+
+\begin{enumerate}
+    \item \textbf{ASVD} \cite{yuan2023asvd} showed that naive SVD truncation fails for LLMs because activation outliers cause disproportionate output error. ASVD absorbs the activation distribution into the weight matrix \emph{before} decomposition: $\tilde{W} = W \cdot \text{diag}(\sqrt{\text{diag}(X^T X)})$.
+
+    \item \textbf{SVD-LLM} (ICLR 2025) \cite{wang2024svdllm} showed that truncating the smallest singular values can paradoxically lead to \emph{higher} compression loss, and proposed truncation-aware data whitening.
+
+    \item The effective rank $r_u$ may be too aggressive or too conservative as a truncation point. ARSVD \cite{cherukuri2025arsvd} uses spectral entropy for adaptive rank selection but finds that a threshold on cumulative spectral entropy (not the effective rank directly) works better.
+\end{enumerate}
+
+\begin{fixbox}
+Replace naive SVD with activation-weighted SVD (ASVD-style). Compare naive vs.\ activation-weighted truncation to demonstrate the gap. Use spectral entropy threshold for rank selection rather than the effective rank scalar directly.
+\end{fixbox}
+
+% ------------------------------------------------------------
+\section{Missing Related Work}
+% ------------------------------------------------------------
+
+The proposal cites only 4 references. The following critical papers are missing:
+
+\subsection{Effective Rank in Deep Learning}
+\begin{itemize}
+    \item \textbf{RankMe} (Garrido et al., ICML 2023) \cite{garrido2023rankme}: Applies the identical Roy \& Vetterli effective rank formula to evaluate representation quality. The most prominent recent use of effective rank in deep learning.
+    \item \textbf{Aghajanyan et al.\ (2020)} \cite{aghajanyan2020intrinsic}: ``Intrinsic Dimensionality Explains the Effectiveness of Language Model Fine-Tuning.'' Showed pre-trained models have very low intrinsic dimension ($\sim$200 parameters can achieve 90\% of full performance). Directly motivates LoRA.
+    \item \textbf{Huh et al.\ (TMLR 2023)} \cite{huh2023lowrank}: ``The Low-Rank Simplicity Bias in Deep Networks.'' Deeper networks are biased toward lower effective rank embeddings.
+    \item \textbf{Huang et al.\ (NeurIPS 2022)} \cite{huang2022rank}: ``Rank Diminishing in Deep Neural Networks.'' Universal monotonic decrease of rank with depth.
+    \item \textbf{Martin \& Mahoney (2019, 2021)} \cite{martin2019traditional, martin2021predicting}: Heavy-tailed spectral analysis of DNN weight matrices. Power-law exponents predict model quality.
+\end{itemize}
+
+\subsection{LLM Compression}
+\begin{itemize}
+    \item \textbf{GPTQ} (Frantar et al., 2022) \cite{frantar2022gptq}: Hessian-based post-training quantization. Uses $H = XX^T$.
+    \item \textbf{ASVD} (Yuan et al., 2023) \cite{yuan2023asvd}: Activation-aware SVD for LLM compression.
+    \item \textbf{SVD-LLM} (Wang et al., ICLR 2025) \cite{wang2024svdllm}: Truncation-aware SVD with data whitening.
+    \item \textbf{SliceGPT} (Ashkboos et al., ICLR 2024) \cite{ashkboos2024slicegpt}: PCA-based structured pruning.
+    \item \textbf{ARSVD} (Cherukuri, 2025) \cite{cherukuri2025arsvd}: Spectral entropy for adaptive rank selection. \textbf{Closest existing work to the proposal's approach}---not yet tested on LLMs.
+    \item \textbf{ResQ} (ICML 2025) \cite{resq2025}: PCA of activation covariance for mixed-precision quantization. Theorem 4.2 proves optimal bit allocation based on eigenvalues.
+\end{itemize}
+
+\subsection{Information Theory}
+\begin{itemize}
+    \item \textbf{Tishby \& Zaslavsky (2015)} \cite{tishby2015deep}: Deep learning and the IB principle. \emph{The instructor is a co-author.}
+    \item \textbf{Shwartz-Ziv \& Tishby (2017)} \cite{shwartzziv2017opening}: Opening the black box via information.
+    \item \textbf{Saxe et al.\ (ICLR 2018)} \cite{saxe2018information}: Critique---compression phase depends on activation function.
+    \item \textbf{The Inductive Bottleneck (2025)} \cite{inductivebottleneck2025}: Effective rank as IB proxy in Vision Transformers.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Scale Concerns: Qwen 3 0.6B}
+% ------------------------------------------------------------
+
+\begin{warningbox}
+Qwen 3 0.6B has 28 layers, hidden\_size=1024, and only 0.44B non-embedding parameters. An empirical study (arXiv:2505.02214) \cite{qwen3quant2025} shows this model is notably more sensitive to quantization than larger Qwen 3 variants ($\sim$10\% benchmark loss at 4-bit vs.\ $\sim$1\% for 14B).
+\end{warningbox}
+
+Implications:
+\begin{itemize}
+    \item Less redundancy $\Rightarrow$ effective rank patterns may be less pronounced.
+    \item Aghajanyan et al.\ \cite{aghajanyan2020intrinsic} showed larger models have \emph{lower} intrinsic dimension, so findings at 0.6B may not transfer.
+    \item At 0.6B, quantization sensitivity differences between layers are smaller, making the effective-rank-guided allocation signal weaker.
+\end{itemize}
+
+\begin{fixbox}
+Acknowledge this limitation explicitly. If computationally feasible, validate at least one key finding on Qwen3-1.7B. At minimum, discuss expected scaling behavior based on Aghajanyan et al.\ and Martin \& Mahoney.
+\end{fixbox}
+
+% ------------------------------------------------------------
+\section{Additional Issues}
+% ------------------------------------------------------------
+
+\subsection{Missing Statistical Rigor}
+The proposal collects ``a sample of normalized activations'' but does not discuss:
+\begin{itemize}
+    \item How many samples are needed for stable covariance estimation (Marchenko-Pastur law: eigenvalue estimates are unreliable when sample size $n \lesssim d$, the ambient dimension).
+    \item Input distribution sensitivity (calibration on WikiText-2 vs.\ code vs.\ conversation data).
+    \item Confidence intervals on effective rank estimates.
+\end{itemize}
+
+\subsection{Missing Baselines}
+Only llama.cpp and AWQ are mentioned. The study should include GPTQ as a baseline, and ideally show how effective rank correlates with the per-layer decisions made by these established methods.
+
+\subsection{Proof Feasibility}
+The promise of ``mathematical proof of effective rank implying good compression'' is unscoped. What is feasible:
+\begin{itemize}
+    \item \textbf{Provable:} Under exponential spectral decay $\sigma_i \sim e^{-\alpha i}$ and the Eckart-Young theorem, the truncation error is bounded by a function of $k/r_{\text{eff}}$. Under Gaussian source assumptions, rate-distortion bounds connect eigenvalue spectrum to bits needed.
+    \item \textbf{Not provable (in 8 days):} The general case with non-Gaussian weights, multi-layer error propagation, and arbitrary activation distributions.
+\end{itemize}
+
+
+% ============================================================
+% PART 2: DOMAIN KNOWLEDGE ANALYSIS
+% ============================================================
+\newpage
+\part{Domain Knowledge to Research}
+
+This section prioritizes the theoretical and technical areas you need to understand before and during the project. Items are ordered by priority for this specific course.
+
+% ------------------------------------------------------------
+\section{Information Bottleneck Theory \textnormal{\textcolor{red}{[CRITICAL]}}}
+% ------------------------------------------------------------
+
+\subsection{Core Papers to Read (in order)}
+
+\begin{enumerate}
+    \item \textbf{Tishby, Pereira \& Bialek (1999)} \cite{tishby1999information}: ``The Information Bottleneck Method.'' The foundational paper. Understand the IB Lagrangian $\mathcal{L} = I(T;X) - \beta I(T;Y)$, the IB curve, and the self-consistent equations for optimal $p(t|x)$.
+
+    \item \textbf{Tishby \& Zaslavsky (2015)} \cite{tishby2015deep}: ``Deep Learning and the Information Bottleneck Principle.'' Maps each DNN layer to a point on the information plane $(I(T;X), I(T;Y))$. Argues optimal architectures correspond to IB bifurcation points.
+
+    \item \textbf{Shwartz-Ziv \& Tishby (2017)} \cite{shwartzziv2017opening}: ``Opening the Black Box.'' Empirically showed two training phases: fitting (increasing $I(T;Y)$) and compression (decreasing $I(T;X)$).
+
+    \item \textbf{Saxe et al.\ (ICLR 2018)} \cite{saxe2018information}: The critique. Compression phase depends on activation function (appears with $\tanh$, not ReLU). Important to understand the debate.
+
+    \item \textbf{The Inductive Bottleneck (2025)} \cite{inductivebottleneck2025}: Uses effective rank (= Roy \& Vetterli's formula) as proxy for $I(T;X)$ in Vision Transformers. Shows U-shaped profile across layers. \textbf{This is the key bridge paper for your project.}
+\end{enumerate}
+
+\subsection{Key Concepts to Understand}
+\begin{itemize}
+    \item The IB tradeoff curve and its geometric interpretation
+    \item Why exact $I(T;X)$ is intractable for continuous high-dimensional representations
+    \item How effective rank serves as a tractable upper bound / proxy for $I(T;X)$
+    \item The compression-vs-fitting debate and its resolution (activation function dependence)
+    \item How quantization/compression of weights relates to further reducing $I(T;X)$
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Rate-Distortion Theory \textnormal{\textcolor{red!70!black}{[HIGH]}}}
+% ------------------------------------------------------------
+
+\subsection{Core Concepts}
+
+\begin{enumerate}
+    \item \textbf{Shannon's rate-distortion function} $R(D)$: the minimum number of bits per symbol to represent a source with average distortion $\leq D$. For a Gaussian source $X \sim \mathcal{N}(0, \sigma^2)$:
+    \begin{equation}
+        R(D) = \frac{1}{2}\log\frac{\sigma^2}{D}, \quad 0 \leq D \leq \sigma^2.
+    \end{equation}
+
+    \item \textbf{Waterfilling for multivariate Gaussian}: For a source with covariance eigenvalues $\{\lambda_i\}$:
+    \begin{equation}
+        R(D) = \sum_i \max\!\left(0, \frac{1}{2}\log\frac{\lambda_i}{\theta}\right), \quad \text{where } \sum_i \min(\lambda_i, \theta) = D.
+    \end{equation}
+    Low effective rank means fewer eigenvalues exceed $\theta$, so $R(D)$ is lower.
+
+    \item \textbf{Shannon Lower Bound}: $R(D) \geq h(X) - \frac{1}{2}\log(2\pi e D)$, where $h(X)$ is the differential entropy. This connects rate to entropy, and thus to the eigenvalue spectrum.
+\end{enumerate}
+
+\subsection{Application to Weight Quantization}
+
+Model each layer's weight matrix rows as draws from a distribution. The eigenvalue spectrum of the row covariance determines $R(D)$. Weight quantization is a lossy source coding problem: $R(D)$ gives the theoretical minimum bits-per-weight at distortion $D$.
+
+\textbf{Key insight}: Effective rank captures the ``effective dimensionality'' of the source. A source with low effective rank lives in a low-dimensional subspace and requires fewer bits---this is the formal justification for the proposal's core claim.
+
+% ------------------------------------------------------------
+\section{Effective Rank and Spectral Properties \textnormal{\textcolor{red!70!black}{[HIGH]}}}
+% ------------------------------------------------------------
+
+\subsection{Roy \& Vetterli (2007) \cite{roy2007effective}}
+
+The effective rank of a matrix $A$ with singular values $\sigma_1 \geq \sigma_2 \geq \cdots \geq \sigma_n > 0$:
+\begin{equation}
+    p_i = \frac{\sigma_i}{\sum_j \sigma_j}, \quad H(\mathbf{p}) = -\sum_i p_i \log p_i, \quad \text{erank}(A) = e^{H(\mathbf{p})}.
+\end{equation}
+
+Properties:
+\begin{itemize}
+    \item $1 \leq \text{erank}(A) \leq \text{rank}(A) \leq \min(m,n)$.
+    \item Continuous function of the singular values (unlike rank, which is discontinuous).
+    \item Maximized when all singular values are equal: $\text{erank} = \text{rank}$.
+    \item Minimized ($= 1$) when one singular value dominates.
+\end{itemize}
+
+\subsection{Stable Rank (Alternative Measure)}
+
+\begin{equation}
+    \text{srank}(A) = \frac{\|A\|_F^2}{\|A\|_2^2} = \frac{\sum_i \sigma_i^2}{\sigma_1^2}.
+\end{equation}
+
+Stable rank appears in PAC-Bayesian generalization bounds and has been used for neural network compression (Sanyal et al., ICLR 2020) \cite{sanyal2020stable}. It is more robust to noise than spectral entropy (many small singular values inflate $H$ but barely change stable rank). \textbf{The proposal should compute and compare both measures.}
+
+\subsection{Spectral Properties of Neural Networks}
+
+\begin{itemize}
+    \item \textbf{Rank diminishing with depth} (Huang et al., NeurIPS 2022) \cite{huang2022rank}: Universal monotonic decrease of network rank with depth, from differential/algebraic composition rules.
+    \item \textbf{Heavy-tailed spectra} (Martin \& Mahoney, 2019, 2021) \cite{martin2019traditional, martin2021predicting}: Weight matrices of well-trained DNNs exhibit power-law singular value distributions. Better-trained networks have heavier tails (lower effective rank).
+    \item \textbf{Low-rank simplicity bias} (Huh et al., TMLR 2023) \cite{huh2023lowrank}: Deeper networks are inductively biased toward lower effective rank embeddings.
+    \item \textbf{RankMe} (Garrido et al., ICML 2023) \cite{garrido2023rankme}: Effective rank of learned representations predicts downstream task performance without any labeled data.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{LLM Quantization Methods \textnormal{\textcolor{red!70!black}{[HIGH]}}}
+% ------------------------------------------------------------
+
+You must understand how the baselines work to position your contribution:
+
+\subsection{GPTQ \cite{frantar2022gptq}}
+\begin{itemize}
+    \item Minimizes $\|WX - Q(W)X\|_F^2$ where $X$ is calibration activations.
+    \item Hessian is $H = 2XX^T$ = the activation covariance matrix.
+    \item Quantizes weights column-by-column, using inverse Hessian for compensatory updates.
+    \item \textbf{Connection to your work}: $r_u$ computes the spectral entropy of the GPTQ Hessian.
+\end{itemize}
+
+\subsection{AWQ \cite{lin2023awq}}
+\begin{itemize}
+    \item Identifies salient weight channels via activation magnitude statistics.
+    \item Applies per-channel scaling before quantization to protect salient channels.
+    \item Only 1\% of channels dominate quantization error.
+    \item \textbf{Philosophical tension}: AWQ says channel-level magnitude matters; you say spectral entropy matters. These are different views of the same activation covariance.
+\end{itemize}
+
+\subsection{QuIP\# (ICML 2024)}
+\begin{itemize}
+    \item Applies randomized Hadamard transform to make weights ``incoherent'' (all entries roughly equal magnitude).
+    \item This \emph{maximizes} effective rank of the transformed matrix before uniform quantization.
+    \item \textbf{Philosophical opposite}: QuIP\# removes spectral variation first, then quantizes uniformly. Your approach uses spectral variation to guide non-uniform quantization.
+\end{itemize}
+
+\subsection{ResQ (ICML 2025) \cite{resq2025}}
+\begin{itemize}
+    \item Uses PCA of activation covariance to identify high-variance subspaces.
+    \item Keeps top $d/8$ eigenvector dimensions in 8-bit, rest in 4-bit.
+    \item Theorem 4.2 proves this is optimal for minimizing quantization error.
+    \item \textbf{Closest to your approach at sub-layer level}: uses the full eigenspectrum, not just the scalar effective rank.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Cognitive Science Connections \textnormal{\textcolor{red}{[CRITICAL for this course]}}}
+% ------------------------------------------------------------
+
+\subsection{Efficient Coding Hypothesis (Barlow, 1961) \cite{barlow1961possible}}
+Neural systems encode sensory information by reducing statistical redundancy, maximizing mutual information between stimuli and responses subject to metabolic constraints. Retinal ganglion cells, V1 simple cells, and auditory nerve fibers all show evidence of efficient coding.
+
+\subsection{Cognitive Bottlenecks}
+\begin{itemize}
+    \item \textbf{Retina}: Compresses $\sim 10^8$ photoreceptor signals into $\sim 10^6$ optic nerve fibers.
+    \item \textbf{Attention}: Severe bottleneck in visual processing (Broadbent, 1958).
+    \item \textbf{Working memory}: Limited capacity ($\sim$4 items, Cowan 2001).
+    \item The IB perspective: these bottlenecks \emph{force} the brain to extract maximally relevant compressed representations.
+\end{itemize}
+
+\subsection{Language as Compression (Zaslavsky's Framework)}
+Zaslavsky et al.\ \cite{zaslavsky2018efficient} showed that color-naming systems across the world's languages achieve near-optimal compression on the IB tradeoff curve. Language itself is a bottleneck: the finite lexicon must compress the continuous space of meanings. An LLM trained on language should reflect this compression structure internally.
+
+% ------------------------------------------------------------
+\section{Random Matrix Theory Basics \textnormal{\textcolor{orange}{[MEDIUM]}}}
+% ------------------------------------------------------------
+
+\begin{itemize}
+    \item \textbf{Marchenko-Pastur law}: For an $n \times d$ random matrix with i.i.d.\ entries, the eigenvalue distribution of $\frac{1}{n}X^TX$ converges to a known distribution. Eigenvalue estimates are unreliable when $n \lesssim d$.
+    \item \textbf{Spiked covariance model}: Signal eigenvalues ``pop out'' above the MP bulk edge. Only these carry information; the rest is noise. The ``true'' effective rank is the number of spikes.
+    \item \textbf{Practical rule}: Use $n \geq 5d$ samples for stable covariance estimation. For Qwen 3 0.6B with $d = 1024$, this means $\geq 5120$ activation vectors per layer.
+\end{itemize}
+
+
+% ============================================================
+% PART 3: EXECUTION ROADMAP
+% ============================================================
+\newpage
+\part{Execution Roadmap (8 Days)}
+
+% ------------------------------------------------------------
+\section{Overview}
+% ------------------------------------------------------------
+
+\begin{center}
+\begin{tabular}{@{}clp{8cm}@{}}
+\toprule
+\textbf{Day} & \textbf{Date} & \textbf{Focus} \\
+\midrule
+1 & Apr 19 (Sat) & Literature reading + environment setup \\
+2 & Apr 20 (Sun) & Spectrum profiling experiments \\
+3 & Apr 21 (Mon) & Quantization experiments \\
+4 & Apr 22 (Tue) & Low-rank compression experiments \\
+5 & Apr 23 (Wed) & Correlation analysis + predictor comparison \\
+6 & Apr 24 (Thu) & Mathematical proof + theory section \\
+7 & Apr 25 (Fri) & Full paper draft \\
+8 & Apr 26 (Sat) & Polish + submit \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ------------------------------------------------------------
+\section{Day 1 (Apr 19): Foundation \& Setup}
+% ------------------------------------------------------------
+
+\subsection{Literature (4 hours)}
+\begin{enumerate}
+    \item Read Tishby, Pereira \& Bialek (1999) \cite{tishby1999information}---focus on the IB Lagrangian and the tradeoff curve.
+    \item Read Tishby \& Zaslavsky (2015) \cite{tishby2015deep}---focus on the mapping of DNN layers to the information plane.
+    \item Read ``The Inductive Bottleneck'' (2025) \cite{inductivebottleneck2025}---focus on how they use effective rank as IB proxy, and the U-shaped profile finding.
+    \item Re-read Roy \& Vetterli (2007) \cite{roy2007effective}---focus on properties, bounds, and the distinction between using $\sigma_i$ vs.\ $\sigma_i^2$.
+\end{enumerate}
+
+\subsection{Environment Setup (3 hours)}
+\begin{enumerate}
+    \item Install dependencies: \texttt{torch}, \texttt{transformers}, \texttt{datasets}, \texttt{auto-gptq}, \texttt{scipy}, \texttt{matplotlib}, \texttt{seaborn}.
+    \item Download Qwen3-0.6B from HuggingFace: \texttt{Qwen/Qwen3-0.6B}.
+    \item Load WikiText-2 dataset for calibration and evaluation.
+    \item Write \textbf{activation collection script}:
+    \begin{itemize}
+        \item Register forward hooks on all linear layers (Q, K, V, O projections; gate, up, down MLP projections).
+        \item Run forward pass on 512 calibration sequences.
+        \item For each layer, collect normalized activation vectors $u_1, u_2, \ldots$ and stack into matrix $U \in \mathbb{R}^{n \times d}$.
+        \item Save $U$ matrices and weight matrices $W$ for each layer.
+    \end{itemize}
+    \item Write \textbf{spectral analysis script}:
+    \begin{itemize}
+        \item Compute SVD of $W$: singular values $\{\sigma_i\}$.
+        \item Compute eigendecomposition of $\frac{1}{n}U^T U$: eigenvalues $\{\lambda_i\}$.
+        \item Compute effective rank (Roy \& Vetterli formula) for both.
+        \item Compute stable rank for both.
+    \end{itemize}
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Day 2 (Apr 20): Spectrum Profiling}
+% ------------------------------------------------------------
+
+\subsection{Experiments}
+\begin{enumerate}
+    \item Run activation collection on WikiText-2 calibration set ($\geq$5120 vectors per layer for stable covariance estimation).
+    \item Compute $r_u$ (activation effective rank) and $r_w$ (weight effective rank) for all 28 layers $\times$ 7 sub-modules:
+    \begin{itemize}
+        \item Attention: Q-proj, K-proj, V-proj, O-proj
+        \item MLP: gate-proj, up-proj, down-proj
+    \end{itemize}
+    Total: $28 \times 7 = 196$ effective rank values for activations, 196 for weights.
+
+    \item Compute stable rank $\text{srank} = \|A\|_F^2 / \|A\|_2^2$ for all the same matrices.
+
+    \item Compute ``activation-weighted'' effective rank: SVD of $W \cdot \text{diag}(\sqrt{\text{diag}(X^TX/n)})$ to see if activation-aware spectral analysis changes the picture.
+\end{enumerate}
+
+\subsection{Visualizations}
+\begin{enumerate}
+    \item \textbf{Layer-wise profile plots}: $r_u$ and $r_w$ across depth (x-axis: layer index, y-axis: effective rank). Separate lines for each sub-module type. Check for the U-shaped profile predicted by the Inductive Bottleneck paper.
+
+    \item \textbf{Scatter plot}: $r_u$ vs.\ $r_w$ for each layer, colored by layer depth. Look for the bottleneck/compression patterns described in step 5b of the proposal.
+
+    \item \textbf{Full singular value spectra}: Log-scale plots of the sorted singular values for representative layers (early, middle, late). Overlay Marchenko-Pastur distribution to separate signal from noise.
+
+    \item \textbf{Effective rank vs.\ stable rank}: Scatter plot comparing the two measures. If they disagree, investigate why.
+\end{enumerate}
+
+\subsection{Reading}
+Continue reading rate-distortion theory: Shannon (1959), Cover \& Thomas Chapter 10 (rate-distortion), Chapter 13 (Gaussian source coding).
+
+% ------------------------------------------------------------
+\section{Day 3 (Apr 21): Quantization Experiments}
+% ------------------------------------------------------------
+
+\subsection{Uniform Quantization Baselines}
+\begin{enumerate}
+    \item Use AutoGPTQ to quantize the full model at Q2, Q3, Q4, Q5, Q8 bit widths.
+    \item Use AWQ to quantize at Q3, Q4 (the most relevant bit widths).
+    \item Measure perplexity on WikiText-2 test set for each quantized model.
+    \item Record per-layer quantization error: for each layer $\ell$, compute $\|W_\ell x - Q(W_\ell) x\|_F^2 / \|W_\ell x\|_F^2$ on calibration data.
+\end{enumerate}
+
+\subsection{Per-Layer Sensitivity Analysis}
+\begin{enumerate}
+    \item Quantize one layer at a time to Q3 while keeping all other layers at FP16. Measure perplexity degradation. This gives per-layer quantization sensitivity $\Delta \text{PPL}_\ell$.
+    \item Repeat for Q4 and Q2.
+    \item This is computationally expensive ($28 \times 7 \times 3 = 588$ model evaluations). Simplification: do it per-transformer-block (28 blocks $\times$ 3 bit widths = 84 evaluations) rather than per-sub-module.
+\end{enumerate}
+
+\subsection{Mixed-Precision Allocation (Effective Rank Guided)}
+\begin{enumerate}
+    \item Rank all layers by their effective rank $r_w$ (or $r_u$, or the activation-weighted variant).
+    \item Assign bits: layers in the bottom 25\% of effective rank get Q3; middle 50\% get Q4; top 25\% get Q5. Ensure the average is $\sim$Q4.
+    \item Measure perplexity and compare against uniform Q4.
+    \item Also try: allocation based on stable rank, and allocation based on per-layer sensitivity $\Delta \text{PPL}_\ell$ (the ``oracle'' method). Compare all three.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Day 4 (Apr 22): Low-Rank Compression Experiments}
+% ------------------------------------------------------------
+
+\subsection{Naive SVD Truncation}
+\begin{enumerate}
+    \item For each layer, compute SVD $W = U\Sigma V^T$.
+    \item Truncate at multiple rank thresholds: $k = r_w$, $k = 0.5 \cdot r_w$, $k = 2 \cdot r_w$, and $k = 0.9 \cdot d$ (minimal truncation).
+    \item Replace $W$ with $U_k \Sigma_k V_k^T$ and measure perplexity.
+    \item Compute per-layer reconstruction error: $\|Wx - W_k x\|_F^2 / \|Wx\|_F^2$.
+\end{enumerate}
+
+\subsection{Activation-Weighted SVD (ASVD-Style)}
+\begin{enumerate}
+    \item Compute diagonal scaling: $s_j = \sqrt{\frac{1}{n}\sum_i x_{ij}^2}$ (RMS activation per channel).
+    \item Form transformed weight: $\tilde{W} = W \cdot \text{diag}(s)$.
+    \item Compute SVD of $\tilde{W}$ and truncate at the same rank thresholds.
+    \item Reconstruct: $W_k^{\text{ASVD}} = \tilde{U}_k \tilde{\Sigma}_k \tilde{V}_k^T \cdot \text{diag}(1/s)$.
+    \item Measure perplexity and compare against naive SVD.
+\end{enumerate}
+
+\subsection{Key Analysis}
+\begin{enumerate}
+    \item Correlate per-layer reconstruction error (both naive and ASVD) with effective rank $r_w$.
+    \item Does low $r_w$ reliably predict low reconstruction error? Generate scatter plots with Spearman correlation.
+    \item Does the ASVD variant show stronger correlation? This would validate that activation-weighted spectral analysis is more predictive.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Day 5 (Apr 23): Correlation Analysis \& Predictor Comparison}
+% ------------------------------------------------------------
+
+\subsection{Central Question}
+\textbf{How well does effective rank predict per-layer compression sensitivity compared to other metrics?}
+
+\subsection{Metrics to Compare}
+For each layer $\ell$, compute:
+\begin{enumerate}
+    \item $r_u^{(\ell)}$: activation effective rank
+    \item $r_w^{(\ell)}$: weight effective rank
+    \item $r_{aw}^{(\ell)}$: activation-weighted effective rank
+    \item $\text{srank}_u^{(\ell)}$, $\text{srank}_w^{(\ell)}$: stable ranks
+    \item $\text{tr}(H^{(\ell)}) = \sum_i \lambda_i^{(\ell)}$: Hessian trace (sum of activation covariance eigenvalues)
+    \item $\kappa^{(\ell)} = \mathbb{E}[x^4]/(\mathbb{E}[x^2])^2$: activation kurtosis (tailedness)
+    \item $\max_j |x_j^{(\ell)}|$: maximum activation magnitude (outlier indicator)
+\end{enumerate}
+
+\subsection{Sensitivity Target}
+The ``ground truth'' sensitivity is $\Delta \text{PPL}_\ell$: perplexity degradation when layer $\ell$ is quantized to Q3 (from Day 3 experiments).
+
+\subsection{Analysis}
+\begin{enumerate}
+    \item Compute Spearman and Pearson correlation between each metric and $\Delta \text{PPL}_\ell$.
+    \item Generate a correlation table comparing all metrics.
+    \item Plot scatter plots: each metric vs.\ $\Delta \text{PPL}_\ell$.
+    \item Key question: Is effective rank competitive with Hessian trace and kurtosis as a predictor?
+    \item Secondary question: Does the activation-weighted variant outperform the raw weight/activation variants?
+\end{enumerate}
+
+\subsection{Information-Theoretic Analysis}
+\begin{enumerate}
+    \item Plot the ``information plane'' analog: $(r_u^{(\ell)}, \text{downstream performance contribution})$ for each layer.
+    \item If downstream task performance contribution is hard to measure, use proxy: how much does removing/compressing layer $\ell$ degrade perplexity?
+    \item Does this reveal an IB-like tradeoff? Layers with lowest $r_u$ (most compressed) that maintain high performance contribution are the most IB-efficient.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Day 6 (Apr 24): Mathematical Proof \& Theory}
+% ------------------------------------------------------------
+
+\subsection{Theorem 1: Low-Rank Approximation Error Bound}
+
+\begin{theorem}[Sketch]
+Let $W$ be an $m \times n$ matrix with singular values $\sigma_1 \geq \cdots \geq \sigma_r > 0$. Define the effective rank $r_{\text{eff}} = \exp(H(\mathbf{p}))$ where $p_i = \sigma_i / \sum_j \sigma_j$. Then for the rank-$k$ truncated SVD approximation $W_k$:
+\begin{equation}
+    \frac{\|W - W_k\|_F^2}{\|W\|_F^2} \leq g(k, r_{\text{eff}}, r),
+\end{equation}
+where $g$ is a function that decreases as $k / r_{\text{eff}}$ increases.
+\end{theorem}
+
+\textbf{Proof strategy}:
+\begin{enumerate}
+    \item By Eckart-Young-Mirsky: $\|W - W_k\|_F^2 = \sum_{i=k+1}^r \sigma_i^2$.
+    \item The spectral entropy $H(\mathbf{p})$ constrains how the $\sigma_i$ can be distributed.
+    \item Under maximum entropy (uniform $p_i$): $\sum_{i=k+1}^r \sigma_i^2 = \frac{r-k}{r}\|W\|_F^2$.
+    \item Under minimum entropy ($p_1 \to 1$): $\sum_{i=k+1}^r \sigma_i^2 \to 0$ for any $k \geq 1$.
+    \item For intermediate $H$, use the method of Lagrange multipliers to find the worst-case distribution at given $H$ (equivalently, given $r_{\text{eff}}$).
+    \item Alternatively, assume a parametric spectral decay model (exponential: $\sigma_i \sim e^{-\alpha i}$) and derive closed-form bounds.
+\end{enumerate}
+
+\subsection{Theorem 2: Rate-Distortion Connection}
+
+\begin{proposition}[Sketch]
+Under a Gaussian source model for the rows of $W$ with covariance eigenvalues $\{\lambda_i\}$, the rate-distortion function satisfies:
+\begin{equation}
+    R(D) \leq \frac{r_{\text{eff}}^{(\lambda)}}{2} \cdot \log\frac{\bar{\lambda}}{D},
+\end{equation}
+where $r_{\text{eff}}^{(\lambda)} = \exp\!\left(-\sum_i \frac{\lambda_i}{\sum_j \lambda_j}\log\frac{\lambda_i}{\sum_j \lambda_j}\right)$ and $\bar{\lambda} = \frac{1}{d}\sum_i \lambda_i$.
+\end{proposition}
+
+\textbf{Proof strategy}: Use the waterfilling formula and bound the number of active components by the effective rank. When $r_{\text{eff}}^{(\lambda)}$ is small, fewer components contribute to $R(D)$.
+
+\subsection{Theorem 3: Effective Rank as IB Complexity Proxy}
+
+\begin{proposition}[Sketch]
+For a representation $T$ with covariance $\Sigma_T$ having eigenvalues $\{\lambda_i\}$, the differential entropy satisfies:
+\begin{equation}
+    h(T) \leq \frac{d}{2}\log(2\pi e) + \frac{1}{2}\log\!\left(\frac{\text{tr}(\Sigma_T)}{d}\right)^d \cdot \frac{d}{\text{erank}(\Sigma_T)^{1/\text{erank}(\Sigma_T)}},
+\end{equation}
+with equality (up to constants) when the spectrum is uniform. More simply: $h(T)$ scales with $\log \text{erank}(\Sigma_T)$ for fixed trace, connecting low effective rank to low IB complexity $I(T;X)$.
+\end{proposition}
+
+\textbf{Proof strategy}: Use the AM-GM inequality on the eigenvalues: $\det(\Sigma_T) = \prod_i \lambda_i \leq \left(\frac{\text{tr}(\Sigma_T)}{d}\right)^d$, with the gap controlled by the spectral entropy. This bounds $h(T) = \frac{1}{2}\log((2\pi e)^d \det(\Sigma_T))$.
+
+\subsection{Cognition Framing Section}
+Draft a discussion section connecting findings to:
+\begin{itemize}
+    \item Efficient coding: Do LLM layers develop efficient (low-redundancy) representations?
+    \item Cognitive bottlenecks: Do middle layers show compression analogous to attentional/working-memory bottlenecks?
+    \item Robustness to resource constraints: Which representations are robust to ``cognitive noise'' (quantization)?
+    \item IB optimality: Are the most compressible layers also the most IB-efficient?
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Day 7 (Apr 25): Full Paper Draft}
+% ------------------------------------------------------------
+
+\subsection{Paper Structure}
+
+\begin{enumerate}
+    \item \textbf{Abstract} (200 words): Rewrite to include IB framing and cognition connection.
+
+    \item \textbf{Introduction} (1.5 pages):
+    \begin{itemize}
+        \item Paragraph 1: Overparameterization and compression in LLMs.
+        \item Paragraph 2: The Information Bottleneck perspective---layers as successive compressions.
+        \item Paragraph 3: Effective rank as a tractable diagnostic connecting IB theory to practical compression.
+        \item Paragraph 4: Connection to cognition---efficient coding, cognitive bottlenecks, resource constraints.
+        \item Paragraph 5: Research questions and contributions.
+    \end{itemize}
+
+    \item \textbf{Background \& Related Work} (2 pages):
+    \begin{itemize}
+        \item IB framework and DNNs (Tishby \& Zaslavsky 2015; Saxe et al.\ 2018).
+        \item Effective rank and spectral properties (Roy \& Vetterli 2007; RankMe; rank diminishing).
+        \item LLM quantization (GPTQ, AWQ, QuIP\#, ResQ).
+        \item Low-rank compression (ASVD, SVD-LLM, ARSVD).
+        \item Efficient coding and cognitive bottlenecks.
+    \end{itemize}
+
+    \item \textbf{Method} (1.5 pages):
+    \begin{itemize}
+        \item Formal definitions: $r_u$, $r_w$, $r_{aw}$, stable rank.
+        \item Diagnostic framework: bottleneck detection via $r_u$ vs.\ $r_w$ comparison.
+        \item Compression pipeline: effective-rank-guided bit allocation and SVD truncation.
+        \item Evaluation protocol.
+    \end{itemize}
+
+    \item \textbf{Theoretical Results} (1.5 pages): Theorems 1--3 from Day 6.
+
+    \item \textbf{Experiments} (3 pages): Results from Days 2--5 with figures and tables.
+
+    \item \textbf{Discussion} (1 page): IB interpretation, cognition connection, limitations (scale, Gaussian assumptions).
+
+    \item \textbf{Conclusion} (0.5 pages): Summary, future work (larger models, non-Gaussian theory).
+\end{enumerate}
+
+\subsection{Key Figures}
+\begin{enumerate}
+    \item Layer-wise effective rank profiles ($r_u$, $r_w$) --- the signature plot.
+    \item Singular value spectra (log-scale) for representative layers.
+    \item Scatter: effective rank vs.\ quantization sensitivity ($\Delta$PPL).
+    \item Correlation table: all metrics vs.\ $\Delta$PPL.
+    \item Mixed-precision results: effective-rank-guided vs.\ uniform vs.\ oracle.
+    \item Low-rank compression: naive SVD vs.\ ASVD at various rank thresholds.
+\end{enumerate}
+
+\subsection{Key Tables}
+\begin{enumerate}
+    \item Quantization results: perplexity at Q2--Q8 for uniform GPTQ, AWQ, and mixed-precision.
+    \item Compression results: model size, perplexity, tokens/sec.
+    \item Correlation coefficients: each metric vs.\ sensitivity.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\section{Day 8 (Apr 26): Polish \& Submit}
+% ------------------------------------------------------------
+
+\begin{enumerate}
+    \item Revise all sections for clarity and consistency.
+    \item Ensure all mathematical notation is consistent (especially $\sigma$ vs.\ $\sigma^2$).
+    \item Verify all figures are publication-quality (proper labels, legends, font sizes).
+    \item Complete reference list ($\geq$20 references).
+    \item Proofread abstract and conclusion.
+    \item Final sanity check: all perplexity numbers in tables match actual experimental runs.
+    \item Prepare supplementary material if needed (full per-layer results, additional spectra).
+    \item Submit.
+\end{enumerate}
+
+% ============================================================
+% EXPERIMENTAL DETAILS
+% ============================================================
+\newpage
+\part*{Appendix: Experimental Specifications}
+\addcontentsline{toc}{part}{Appendix: Experimental Specifications}
+
+\section*{A. Model Architecture: Qwen 3 0.6B}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Hidden size ($d$) & 1024 \\
+Intermediate size (MLP) & 3072 \\
+Number of layers & 28 \\
+Attention heads (Q) & 16 \\
+Attention heads (KV) & 8 (GQA) \\
+Head dimension & 128 \\
+Vocabulary size & 151,936 \\
+Normalization & RMSNorm ($\epsilon = 10^{-6}$) \\
+Activation & SiLU (SwiGLU) \\
+Total parameters & $\sim$0.6B \\
+Precision & bfloat16 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Per-layer weight matrix dimensions:
+\begin{itemize}
+    \item Q projection: $1024 \times 2048$ ($16 \times 128$)
+    \item K projection: $1024 \times 1024$ ($8 \times 128$)
+    \item V projection: $1024 \times 1024$ ($8 \times 128$)
+    \item O projection: $2048 \times 1024$
+    \item MLP gate/up: $1024 \times 3072$ each
+    \item MLP down: $3072 \times 1024$
+\end{itemize}
+
+\section*{B. Calibration \& Evaluation Data}
+
+\begin{itemize}
+    \item \textbf{Calibration}: WikiText-2 training set, 512 sequences of length 2048 tokens. This provides $512 \times 2048 = 1{,}048{,}576$ activation vectors per layer (far exceeding the Marchenko-Pastur threshold of $5d = 5120$).
+    \item \textbf{Evaluation}: WikiText-2 test set, standard perplexity computation.
+\end{itemize}
+
+\section*{C. Software Stack}
+
+\begin{itemize}
+    \item \texttt{torch} $\geq$ 2.0: Model inference, SVD, eigendecomposition
+    \item \texttt{transformers}: Model loading (Qwen3-0.6B)
+    \item \texttt{datasets}: WikiText-2 loading
+    \item \texttt{auto-gptq}: GPTQ quantization
+    \item \texttt{awq}: AWQ quantization (via \texttt{autoawq})
+    \item \texttt{scipy.linalg}: Numerical linear algebra fallbacks
+    \item \texttt{matplotlib}, \texttt{seaborn}: Visualization
+    \item \texttt{numpy}: Array operations
+\end{itemize}
+
+\section*{D. Compute Requirements}
+
+\begin{itemize}
+    \item Qwen3-0.6B in FP16: $\sim$1.2 GB VRAM. Fits easily on any modern GPU.
+    \item SVD of $3072 \times 1024$ matrix: $\sim$0.1 seconds on CPU.
+    \item Full spectrum profiling (196 matrices): $\sim$20 seconds total.
+    \item Per-layer sensitivity analysis (84 evaluations at 3 bit widths): $\sim$2--4 hours on single GPU (depending on evaluation set size).
+    \item Total compute: achievable on a single GPU (e.g., A100, V100, or even RTX 3090) within 1 day.
+\end{itemize}
+
+
+% ============================================================
+% REFERENCES
+% ============================================================
+\newpage
+\begin{thebibliography}{99}
+
+\bibitem{roy2007effective}
+O.~Roy and M.~Vetterli, ``The effective rank: A measure of effective dimensionality,'' in \textit{15th European Signal Processing Conference (EUSIPCO)}, 2007.
+
+\bibitem{lin2023awq}
+J.~Lin, J.~Tang, H.~Tang, S.~Yang, X.~Zhang, and S.~Han, ``AWQ: Activation-aware weight quantization for LLM compression and acceleration,'' in \textit{MLSys}, 2024. arXiv:2306.00978.
+
+\bibitem{dohare2024loss}
+S.~Dohare, J.~F. Hernandez-Garcia, Q.~Lan, et al., ``Loss of plasticity in deep continual learning,'' \textit{Nature}, vol.~632, pp.~768--774, 2024.
+
+\bibitem{tishby1999information}
+N.~Tishby, F.~C. Pereira, and W.~Bialek, ``The information bottleneck method,'' in \textit{Proc.\ 37th Annual Allerton Conf.}, 1999.
+
+\bibitem{tishby2015deep}
+N.~Tishby and N.~Zaslavsky, ``Deep learning and the information bottleneck principle,'' in \textit{IEEE Information Theory Workshop (ITW)}, 2015.
+
+\bibitem{shwartzziv2017opening}
+R.~Shwartz-Ziv and N.~Tishby, ``Opening the black box of deep neural networks via information,'' arXiv:1703.00810, 2017.
+
+\bibitem{saxe2018information}
+A.~M. Saxe, Y.~Bansal, J.~Dapello, M.~Advani, A.~Kolchinsky, B.~D. Levin, and D.~D. Cox, ``On the information bottleneck theory of deep learning,'' in \textit{ICLR}, 2018.
+
+\bibitem{inductivebottleneck2025}
+``The inductive bottleneck: Data-driven emergence of representational sparsity in vision transformers,'' arXiv:2512.07331, 2025.
+
+\bibitem{zaslavsky2018efficient}
+N.~Zaslavsky, C.~Kemp, R.~Regier, and N.~Tishby, ``Efficient compression in color naming and its evolution,'' \textit{Proc.\ Natl.\ Acad.\ Sci.\ USA}, vol.~115, no.~31, pp.~7937--7942, 2018.
+
+\bibitem{barlow1961possible}
+H.~B. Barlow, ``Possible principles underlying the transformations of sensory messages,'' in \textit{Sensory Communication}, W.~A. Rosenblith, Ed., MIT Press, 1961.
+
+\bibitem{shannon1959coding}
+C.~E. Shannon, ``Coding theorems for a discrete source with a fidelity criterion,'' in \textit{IRE National Convention Record}, part 4, pp.~142--163, 1959.
+
+\bibitem{cover2006elements}
+T.~M. Cover and J.~A. Thomas, \textit{Elements of Information Theory}, 2nd ed., Wiley, 2006.
+
+\bibitem{frantar2022gptq}
+E.~Frantar, S.~Ashkboos, T.~Hoefler, and D.~Alistarh, ``GPTQ: Accurate post-training quantization for generative pre-trained transformers,'' in \textit{ICLR}, 2023. arXiv:2210.17323.
+
+\bibitem{garrido2023rankme}
+Q.~Garrido, R.~Balestriero, L.~Najman, and Y.~LeCun, ``RankMe: Assessing the downstream performance of pretrained self-supervised representations by their rank,'' in \textit{ICML}, 2023.
+
+\bibitem{aghajanyan2020intrinsic}
+A.~Aghajanyan, L.~Zettlemoyer, and S.~Gupta, ``Intrinsic dimensionality explains the effectiveness of language model fine-tuning,'' in \textit{ACL}, 2021. arXiv:2012.13255.
+
+\bibitem{huh2023lowrank}
+M.~Huh, H.~Mobahi, R.~Zhang, B.~Cheung, P.~Agrawal, and P.~Isola, ``The low-rank simplicity bias in deep networks,'' \textit{Trans.\ Mach.\ Learn.\ Res.\ (TMLR)}, 2023.
+
+\bibitem{huang2022rank}
+W.~Huang, Y.~Wang, L.~Cao, et al., ``Rank diminishing in deep neural networks,'' in \textit{NeurIPS}, 2022.
+
+\bibitem{martin2019traditional}
+C.~H. Martin and M.~W. Mahoney, ``Traditional and heavy-tailed self regularization in neural network models,'' in \textit{ICML}, 2019.
+
+\bibitem{martin2021predicting}
+C.~H. Martin and M.~W. Mahoney, ``Predicting trends in the quality of state-of-the-art neural networks without access to training or testing data,'' \textit{Nature Communications}, vol.~12, 2021.
+
+\bibitem{yuan2023asvd}
+Z.~Yuan, et al., ``ASVD: Activation-aware singular value decomposition for compressing large language models,'' arXiv:2312.05821, 2023.
+
+\bibitem{wang2024svdllm}
+X.~Wang, et al., ``SVD-LLM: Truncation-aware singular value decomposition for large language model compression,'' in \textit{ICLR}, 2025.
+
+\bibitem{ashkboos2024slicegpt}
+S.~Ashkboos, et al., ``SliceGPT: Compress large language models by deleting rows and columns,'' in \textit{ICLR}, 2024.
+
+\bibitem{cherukuri2025arsvd}
+V.~Cherukuri, ``ARSVD: Low-rank matrix approximation via spectral entropy,'' arXiv:2504.20078, 2025.
+
+\bibitem{resq2025}
+U.~Bondarenko, et al., ``ResQ: Mixed-precision quantization of large language models with low-rank residuals,'' in \textit{ICML}, 2025.
+
+\bibitem{sanyal2020stable}
+A.~Sanyal, P.~H. Torr, and P.~K. Dokania, ``Stable rank normalization for improved generalization in neural networks and GANs,'' in \textit{ICLR}, 2020.
+
+\bibitem{hu2021lora}
+E.~J. Hu, et al., ``LoRA: Low-rank adaptation of large language models,'' arXiv:2106.09685, 2021.
+
+\bibitem{qwen3quant2025}
+``An empirical study of Qwen3 quantization,'' arXiv:2505.02214, 2025.
+
+\end{thebibliography}
+
+\end{document}

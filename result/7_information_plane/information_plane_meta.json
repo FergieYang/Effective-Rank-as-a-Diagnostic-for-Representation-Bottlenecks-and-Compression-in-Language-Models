@@ -1,0 +1,50 @@
+{
+  "created_at": "2026-04-30T14:16:53",
+  "statistics_csvs": [
+    "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/result/Llama-3.2-1B/1_statistics/layer_statistics.csv",
+    "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/result/Qwen2.5-1.5B/1_statistics/layer_statistics.csv",
+    "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/result/Qwen3-0.6B/1_statistics/layer_statistics.csv",
+    "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/result/SmolLM2-1.7B/1_statistics/layer_statistics.csv"
+  ],
+  "mi_csvs": [
+    "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/result/Llama-3.2-1B/6_mutual_information/mutual_information.csv",
+    "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/result/Qwen2.5-1.5B/6_mutual_information/mutual_information.csv",
+    "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/result/Qwen3-0.6B/6_mutual_information/mutual_information.csv",
+    "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/result/SmolLM2-1.7B/6_mutual_information/mutual_information.csv"
+  ],
+  "output_dir": "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/result/7_information_plane",
+  "models": [
+    "Llama-3.2-1B",
+    "Qwen2.5-1.5B",
+    "Qwen3-0.6B",
+    "SmolLM2-1.7B"
+  ],
+  "information_plane_definition": "x-axis: MLP output centered effective rank ratio (proxy for I(T;X), representation complexity). y-axis: Gaussian MI in bits between MLP output at layer l and MLP output at the final layer (proxy for I(T;Y), informativeness). Each point is one layer.",
+  "ib_curve_definition": "Gaussian IB curve (Chechik et al. 2005): for covariance eigenvalues lambda_i, sweep beta to determine which dimensions are kept. I(T;X) = (1/2) sum_kept log(beta * lambda_i), I(T;Y) = (1/2) sum_kept log(lambda_i / (lambda_i - 1/beta)). Uses the middle layer's eigenvalue spectrum as representative.",
+  "scatter_meta": {
+    "pooled_pearson_r": NaN,
+    "correlations": [
+      {
+        "base_model_id": "Llama-3.2-1B",
+        "pearson_r": NaN,
+        "num_layers": 15
+      },
+      {
+        "base_model_id": "Qwen2.5-1.5B",
+        "pearson_r": 0.3483282148553907,
+        "num_layers": 27
+      },
+      {
+        "base_model_id": "Qwen3-0.6B",
+        "pearson_r": 0.13571155512926772,
+        "num_layers": 27
+      },
+      {
+        "base_model_id": "SmolLM2-1.7B",
+        "pearson_r": 0.056559265122515814,
+        "num_layers": 23
+      }
+    ]
+  },
+  "eigenvalue_sources": {}
+}

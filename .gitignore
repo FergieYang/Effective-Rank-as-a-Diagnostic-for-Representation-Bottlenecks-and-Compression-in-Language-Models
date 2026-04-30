@@ -7,3 +7,11 @@ artifact/models/
 **/.cache/
 __pycache__/
 *.py[cod]
+
+# LaTeX build artifacts
+*.synctex.gz
+*.aux
+*.log
+*.out
+*.fls
+*.fdb_latexmk

@@ -84,6 +84,23 @@ def default_stage5_compression_analysis_output_dir() -> Path:
     return RESULT_ROOT / "5_compression_analysis"
 
 
+def default_stage6_mi_output_dir(base_model_dir: Path) -> Path:
+    return stage_result_dir("6_mutual_information", base_model_dir)
+
+
+def default_stage7_information_plane_output_dir() -> Path:
+    return RESULT_ROOT / "7_information_plane"
+
+
+def discover_mi_csvs() -> list[Path]:
+    csvs = []
+    for model_result_dir in sorted(path for path in RESULT_ROOT.iterdir() if path.is_dir()):
+        candidate = model_result_dir / "6_mutual_information" / "mutual_information.csv"
+        if candidate.exists():
+            csvs.append(candidate)
+    return csvs
+
+
 def _resolved_model_storage_dir(run_dir: Path) -> Path | None:
     meta_path = run_dir / "compression_meta.json"
     if not meta_path.exists():

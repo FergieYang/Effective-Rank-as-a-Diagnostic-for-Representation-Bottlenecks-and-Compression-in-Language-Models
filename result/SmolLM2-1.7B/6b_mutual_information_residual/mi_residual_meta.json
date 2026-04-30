@@ -1,0 +1,54 @@
+{
+  "created_at": "2026-04-30T13:09:23",
+  "model_path": "artifact/models/SmolLM2-1.7B/base",
+  "base_model_id": "SmolLM2-1.7B",
+  "data_path": "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/data/wikitext2/train.txt",
+  "output_dir": "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/result/SmolLM2-1.7B/6b_mutual_information_residual",
+  "device": "cpu",
+  "stats_device": "cpu",
+  "merge_device": "cpu",
+  "num_layers": 24,
+  "final_layer_index": 23,
+  "hidden_size": 2048,
+  "max_length": 512,
+  "batch_size": 1,
+  "max_token_samples": 65536,
+  "regularization": 1e-08,
+  "num_windows": 128,
+  "representation": "residual_stream",
+  "hook_target": "transformer layer output (h_\u2113 = residual stream after attention + MLP + skip)",
+  "mi_definition": "Gaussian MI between residual streams h_\u2113 and h_L, computed via log-det (primary) and CCA (validation). Log-det: I = (1/2)(log det \u03a3_l + log det \u03a3_L - log det \u03a3_joint). CCA: I = -(1/2) \u03a3_i log(1 - \u03c1_i\u00b2). The residual stream is full-rank so both methods should agree closely without truncation.",
+  "final_layer_note": "Layer L = final_layer_index is excluded from MI computation because I(h_L; h_L) is degenerate (infinite for continuous Gaussian).",
+  "cca_logdet_discrepancies": [
+    {
+      "layer_index": 1,
+      "mi_logdet": 167.19482421875,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 7,
+      "mi_logdet": 200.7880859375,
+      "mi_cca": 203.55938720703125,
+      "relative_difference": 0.013802120064005602
+    },
+    {
+      "layer_index": 8,
+      "mi_logdet": 219.97412109375,
+      "mi_cca": 222.70565795898438,
+      "relative_difference": 0.012417537352360784
+    },
+    {
+      "layer_index": 9,
+      "mi_logdet": 228.6103515625,
+      "mi_cca": 231.13290405273438,
+      "relative_difference": 0.011034288136968863
+    },
+    {
+      "layer_index": 10,
+      "mi_logdet": 235.67724609375,
+      "mi_cca": 238.1016387939453,
+      "relative_difference": 0.010286918828094732
+    }
+  ]
+}

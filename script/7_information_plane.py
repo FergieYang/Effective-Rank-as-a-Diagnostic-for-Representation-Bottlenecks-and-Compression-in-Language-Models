@@ -5,12 +5,11 @@ Gaussian MI (proxy for I(T;Y)) from stage-6 to visualise the Information
 Bottleneck plane.
 
 Outputs:
-    result/7_information_plane/information_plane_scatter.png
-    result/7_information_plane/information_plane_scatter.svg
-    result/7_information_plane/mi_rank_trends.png
-    result/7_information_plane/mi_rank_trends.svg
-    result/7_information_plane/ib_tradeoff.png
-    result/7_information_plane/ib_tradeoff.svg
+    result/7_information_plane/information_plane_scatter.png/svg
+    result/7_information_plane/mi_rank_trends.png/svg
+    result/7_information_plane/ib_tradeoff.png/svg
+    result/7_information_plane/pareto_frontier.png/svg
+    result/7_information_plane/efficiency_scores.png/svg
     result/7_information_plane/information_plane_meta.json
 """
 
@@ -174,10 +173,10 @@ def load_model_data(
     model_data = []
     for idx, model_id in enumerate(common_models):
         mi_rows = mi_by_model[model_id]
-        # Exclude final layer (MI is NaN there)
-        valid_rows = [r for r in mi_rows if r["gaussian_mi_cca"] not in ("nan", "")]
+        # Exclude final layer (NaN) and numerically unstable layers (inf)
+        valid_rows = [r for r in mi_rows if r["gaussian_mi_cca"] not in ("nan", "inf", "")]
         try:
-            valid_rows = [r for r in valid_rows if not math.isnan(float(r["gaussian_mi_cca"]))]
+            valid_rows = [r for r in valid_rows if math.isfinite(float(r["gaussian_mi_cca"]))]
         except (ValueError, TypeError):
             valid_rows = []
 
@@ -468,6 +467,321 @@ def load_eigenvalues_for_ib(statistics_csvs: list[Path]) -> dict[str, list[float
     return eigenvalues_by_model
 
 
+# ── Pareto frontier, efficiency scores, Lagrangian sweep ─────────────
+
+
+def compute_pareto_frontier(
+    rank: list[float], mi: list[float], layer_indices: list[int],
+) -> dict:
+    points = sorted(zip(rank, mi, layer_indices), key=lambda p: (p[0], -p[1]))
+    frontier = []
+    max_mi = float("-inf")
+    for r, m, idx in points:
+        if m >= max_mi:
+            frontier.append((r, m, idx))
+            max_mi = m
+    return {
+        "frontier_layers": [f[2] for f in frontier],
+        "frontier_rank": [f[0] for f in frontier],
+        "frontier_mi": [f[1] for f in frontier],
+    }
+
+
+def compute_efficiency_scores(
+    rank: list[float],
+    mi: list[float],
+    frontier_rank: list[float],
+    frontier_mi: list[float],
+) -> list[float]:
+    scores: list[float] = []
+    for r, m in zip(rank, mi):
+        if r <= frontier_rank[0]:
+            interp_mi = frontier_mi[0]
+        elif r >= frontier_rank[-1]:
+            interp_mi = frontier_mi[-1]
+        else:
+            interp_mi = frontier_mi[0]
+            for i in range(len(frontier_rank) - 1):
+                if frontier_rank[i] <= r <= frontier_rank[i + 1]:
+                    t = (r - frontier_rank[i]) / (frontier_rank[i + 1] - frontier_rank[i])
+                    interp_mi = frontier_mi[i] + t * (frontier_mi[i + 1] - frontier_mi[i])
+                    break
+        scores.append(max(0.0, interp_mi - m))
+    max_score = max(scores) if scores else 1.0
+    if max_score > 0:
+        scores = [s / max_score for s in scores]
+    return scores
+
+
+def lagrangian_sweep(
+    rank: list[float],
+    mi: list[float],
+    layer_indices: list[int],
+    num_betas: int = 200,
+) -> dict:
+    norm_rank = min_max_normalize(rank)
+    norm_mi = min_max_normalize(mi)
+
+    log_min, log_max = math.log10(0.01), math.log10(100.0)
+    betas = [10 ** (log_min + i * (log_max - log_min) / (num_betas - 1))
+             for i in range(num_betas)]
+
+    optimal_layers: list[int] = []
+    for beta in betas:
+        best_idx = max(
+            range(len(norm_mi)),
+            key=lambda i: norm_mi[i] - beta * norm_rank[i],
+        )
+        optimal_layers.append(layer_indices[best_idx])
+
+    transitions: list[dict] = []
+    convex_hull_layers = [optimal_layers[0]]
+    for i in range(1, len(optimal_layers)):
+        if optimal_layers[i] != optimal_layers[i - 1]:
+            transitions.append({
+                "beta": betas[i],
+                "from_layer": optimal_layers[i - 1],
+                "to_layer": optimal_layers[i],
+            })
+            if optimal_layers[i] not in convex_hull_layers:
+                convex_hull_layers.append(optimal_layers[i])
+
+    return {
+        "betas": betas,
+        "optimal_layers": optimal_layers,
+        "transitions": transitions,
+        "convex_hull_layers": convex_hull_layers,
+    }
+
+
+def _subplot_grid(plt, n_models: int, per_height: float = 6.0):
+    ncols = 2
+    nrows = max(1, (n_models + 1) // 2)
+    fig, axes = plt.subplots(
+        nrows, ncols, figsize=(14, per_height * nrows),
+        dpi=200, constrained_layout=True,
+    )
+    if n_models == 1:
+        flat = [axes]
+    elif nrows == 1:
+        flat = list(axes)
+    else:
+        flat = [axes[r][c] for r in range(nrows) for c in range(ncols)]
+    for idx in range(n_models, nrows * ncols):
+        flat[idx].set_visible(False)
+    return fig, flat
+
+
+def plot_pareto_frontier(
+    *, plt, model_data: list[dict[str, object]], output_dir: Path
+) -> dict:
+    import matplotlib.colors as mcolors
+
+    fig, flat = _subplot_grid(plt, len(model_data))
+    depth_norm = mcolors.Normalize(vmin=0, vmax=1)
+    cmap = plt.cm.viridis
+    pareto_meta: dict[str, object] = {}
+
+    for idx, item in enumerate(model_data):
+        ax = flat[idx]
+        model_id = item["base_model_id"]
+        rank = item["erank_ratio"]
+        mi = item["mi_bits"]
+        layers = item["layer_indices"]
+        depths = item["depth_positions"]
+
+        frontier = compute_pareto_frontier(rank, mi, layers)
+        frontier_set = set(frontier["frontier_layers"])
+
+        for i, layer in enumerate(layers):
+            on_f = layer in frontier_set
+            ax.scatter(
+                rank[i], mi[i],
+                c=[depths[i]], cmap=cmap, norm=depth_norm,
+                s=120 if on_f else 60,
+                alpha=0.9 if on_f else 0.35,
+                edgecolors="white", linewidths=0.5,
+                zorder=5 if on_f else 3,
+            )
+
+        ax.plot(
+            frontier["frontier_rank"], frontier["frontier_mi"],
+            color="#111827", linewidth=2.5, alpha=0.7,
+            zorder=4, label="Pareto frontier",
+        )
+
+        for i, layer in enumerate(frontier["frontier_layers"]):
+            ax.annotate(
+                str(layer),
+                (frontier["frontier_rank"][i], frontier["frontier_mi"][i]),
+                textcoords="offset points", xytext=(5, 5),
+                fontsize=7, fontweight="bold", color="#111827",
+            )
+
+        ax.set_title(model_id, fontsize=12, fontweight="bold")
+        ax.set_xlabel("Effective Rank Ratio")
+        ax.set_ylabel("Gaussian MI (bits)")
+        ax.grid(True, alpha=0.3)
+        ax.legend(loc="upper left", fontsize=8)
+
+        pareto_meta[model_id] = {
+            "frontier_layers": frontier["frontier_layers"],
+            "num_frontier": len(frontier["frontier_layers"]),
+            "num_total": len(layers),
+        }
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=depth_norm)
+    visible_axes = [flat[i] for i in range(len(model_data))]
+    fig.colorbar(sm, ax=visible_axes, label="Normalized Depth", shrink=0.6)
+    fig.suptitle(
+        "Pareto Efficiency Frontier: Effective Rank vs Gaussian MI",
+        fontsize=15, y=1.02,
+    )
+
+    save_figure(fig, output_dir / "pareto_frontier.png",
+                output_dir / "pareto_frontier.svg")
+    plt.close(fig)
+    return pareto_meta
+
+
+def plot_efficiency_scores(
+    *, plt, model_data: list[dict[str, object]], output_dir: Path
+) -> dict:
+    fig, ax = plt.subplots(figsize=(10, 5.5), dpi=200, constrained_layout=True)
+    add_depth_region_bands(ax)
+    efficiency_meta: dict[str, object] = {}
+
+    for item in model_data:
+        rank = item["erank_ratio"]
+        mi = item["mi_bits"]
+        layers = item["layer_indices"]
+
+        frontier = compute_pareto_frontier(rank, mi, layers)
+        scores = compute_efficiency_scores(
+            rank, mi, frontier["frontier_rank"], frontier["frontier_mi"],
+        )
+
+        ax.plot(
+            item["depth_positions"], scores,
+            color=item["color"], linewidth=2.4,
+            marker="o", markersize=4,
+            label=item["base_model_id"],
+        )
+
+        most_wasteful = layers[scores.index(max(scores))] if scores else None
+        efficiency_meta[item["base_model_id"]] = {
+            "scores": [round(s, 4) for s in scores],
+            "most_wasteful_layer": most_wasteful,
+            "mean_score": round(sum(scores) / len(scores), 4) if scores else 0,
+        }
+
+    ax.set_title("Layer Efficiency: Distance from Pareto Frontier", fontsize=13, fontweight="bold")
+    ax.set_xlabel("Normalized Layer Depth")
+    ax.set_ylabel("Efficiency Deficit (0 = on frontier, 1 = most wasteful)")
+    ax.set_xlim(-0.02, 1.02)
+    ax.set_ylim(-0.02, 1.05)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="upper right", frameon=True)
+
+    ax.set_xticks([0.0, 1.0 / 3.0, 2.0 / 3.0, 1.0])
+    ax.text(1.0 / 6.0, 1.06, "Early", transform=ax.get_xaxis_transform(),
+            ha="center", va="bottom", fontsize=9, color="#475569")
+    ax.text(0.5, 1.06, "Middle", transform=ax.get_xaxis_transform(),
+            ha="center", va="bottom", fontsize=9, color="#475569")
+    ax.text(5.0 / 6.0, 1.06, "Late", transform=ax.get_xaxis_transform(),
+            ha="center", va="bottom", fontsize=9, color="#475569")
+
+    save_figure(fig, output_dir / "efficiency_scores.png",
+                output_dir / "efficiency_scores.svg")
+    plt.close(fig)
+    return efficiency_meta
+
+
+def plot_lagrangian_sweep(
+    *, plt, model_data: list[dict[str, object]], output_dir: Path
+) -> dict:
+    fig, flat = _subplot_grid(plt, len(model_data), per_height=5.0)
+    lagrangian_meta: dict[str, object] = {}
+
+    for idx, item in enumerate(model_data):
+        ax = flat[idx]
+        model_id = item["base_model_id"]
+        rank = item["erank_ratio"]
+        mi = item["mi_bits"]
+        layers = item["layer_indices"]
+
+        sweep = lagrangian_sweep(rank, mi, layers)
+        log_betas = [math.log10(b) for b in sweep["betas"]]
+
+        ax.step(log_betas, sweep["optimal_layers"],
+                where="post", color=item["color"], linewidth=2.2)
+
+        for tr in sweep["transitions"]:
+            ax.axvline(
+                math.log10(tr["beta"]), color="#94a3b8",
+                linewidth=0.8, linestyle=":", alpha=0.6,
+            )
+            ax.annotate(
+                f"{tr['from_layer']}→{tr['to_layer']}",
+                (math.log10(tr["beta"]), tr["to_layer"]),
+                textcoords="offset points", xytext=(4, 6),
+                fontsize=6.5, color="#475569",
+            )
+
+        ax.set_title(model_id, fontsize=12, fontweight="bold")
+        ax.set_xlabel("log10(beta)  (compression penalty)")
+        ax.set_ylabel("Optimal Layer")
+        ax.grid(True, alpha=0.3)
+
+        lagrangian_meta[model_id] = {
+            "convex_hull_layers": sweep["convex_hull_layers"],
+            "num_transitions": len(sweep["transitions"]),
+        }
+
+    fig.suptitle(
+        "Lagrangian Sweep: Optimal Layer at Each Complexity Budget",
+        fontsize=15, y=1.02,
+    )
+
+    save_figure(fig, output_dir / "lagrangian_sweep.png",
+                output_dir / "lagrangian_sweep.svg")
+    plt.close(fig)
+    return lagrangian_meta
+
+
+def plot_information_density(
+    *, plt, model_data: list[dict[str, object]], output_dir: Path
+) -> None:
+    fig, flat = _subplot_grid(plt, len(model_data), per_height=5.0)
+
+    for idx, item in enumerate(model_data):
+        ax = flat[idx]
+        depths_f, density_f = [], []
+        for d, m, r in zip(item["depth_positions"], item["mi_bits"], item["erank_ratio"]):
+            if r > 1e-6:
+                depths_f.append(d)
+                density_f.append(math.log(m / r))
+
+        ax.plot(depths_f, density_f,
+                color=item["color"], linewidth=2.4,
+                marker="o", markersize=4)
+
+        add_depth_region_bands(ax)
+        ax.set_title(item["base_model_id"], fontsize=12, fontweight="bold")
+        ax.set_xlabel("Normalized Depth")
+        ax.set_ylabel("ln(MI / Rank Ratio)")
+        ax.set_xlim(-0.02, 1.02)
+        ax.grid(True, alpha=0.3)
+
+    fig.suptitle(
+        "Information Density: Gaussian MI per Effective Rank Ratio",
+        fontsize=15, y=1.02,
+    )
+    save_figure(fig, output_dir / "information_density.png",
+                output_dir / "information_density.svg")
+    plt.close(fig)
+
+
 def main() -> None:
     args = parse_args()
     args.output_dir = args.output_dir or default_stage7_information_plane_output_dir()
@@ -516,6 +830,24 @@ def main() -> None:
     )
     print("Wrote ib_tradeoff.png/svg")
 
+    # Plot 4: Pareto frontier per model
+    pareto_meta = plot_pareto_frontier(
+        plt=plt, model_data=model_data, output_dir=args.output_dir
+    )
+    print("Wrote pareto_frontier.png/svg")
+
+    # Plot 5: Efficiency scores across depth
+    efficiency_meta = plot_efficiency_scores(
+        plt=plt, model_data=model_data, output_dir=args.output_dir
+    )
+    print("Wrote efficiency_scores.png/svg")
+
+    # Plot 6: Information density
+    plot_information_density(
+        plt=plt, model_data=model_data, output_dir=args.output_dir
+    )
+    print("Wrote information_density.png/svg")
+
     # Metadata
     meta = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
@@ -537,6 +869,8 @@ def main() -> None:
             "Uses the middle layer's eigenvalue spectrum as representative."
         ),
         "scatter_meta": scatter_meta,
+        "pareto_meta": pareto_meta,
+        "efficiency_meta": efficiency_meta,
         "eigenvalue_sources": {
             model_id: "middle layer mlp_output_centered eigenvalues"
             for model_id in eigenvalues_by_model

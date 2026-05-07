@@ -1,0 +1,65 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+
+\title{Budget Allocation --- Quick Reference Notes}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{1. Compression ratio --- factorised vs.\ dense}
+
+\begin{itemize}
+    \item \textbf{Dense parameters}: the original weight matrix has $d_h \times d_i$ parameters.
+    \item \textbf{Factorised parameters}: a rank-$k$ SVD splits it into two matrices:
+    \[
+        \underbrace{(d_h \times k)}_{\text{left factor}} + \underbrace{(k \times d_i)}_{\text{right factor}} = k\,(d_h + d_i).
+    \]
+    \item \textbf{Compression ratio}:
+    \[
+        \alpha = \frac{\text{factorised params}}{\text{dense params}} = \frac{k\,(d_h + d_i)}{d_h \cdot d_i}.
+    \]
+    So $\alpha = 0.80$ means ``keep 80\% of the original parameter count.''
+\end{itemize}
+
+\section*{2. Why that formula for $k$}
+
+Just solve $\alpha = \dfrac{k\,(d_h + d_i)}{d_h \cdot d_i}$ for $k$:
+
+\[
+    \boxed{k_{\mathrm{uniform}} = \alpha \cdot \frac{d_h \cdot d_i}{d_h + d_i}}
+\]
+
+Nothing deep --- it is the rank that achieves exactly the target parameter ratio.
+
+\section*{3. Redistribution formula}
+
+Given $L$ layers with the same total budget $k_{\mathrm{uniform}} \times L$, each layer~$\ell$ receives rank proportional to its protection score:
+
+\[
+    \boxed{k_\ell = \bigl(k_{\mathrm{uniform}} \times L\bigr) \cdot \frac{\mathrm{protection\_score}_\ell}{\displaystyle\sum_{j=1}^{L} \mathrm{protection\_score}_j}}
+\]
+
+Total budget is identical to the uniform case; layers with higher protection scores get proportionally more rank.
+
+\section*{4. Why the upper bound $k \leq d_h$}
+
+The gate\_proj and up\_proj matrices have shape $d_i \times d_h$.  A rank-$k$ approximation cannot exceed the smaller dimension, which is $d_h$.  So $k > d_h$ is mathematically impossible --- you would be requesting more singular values than exist.  The clamp prevents the proportional formula from assigning nonsensical ranks to high-protection layers.
+
+\section*{5. How rounding adjustment works}
+
+The proportional formula yields float ranks (e.g.\ $614.3$).  The adjustment procedure:
+
+\begin{enumerate}
+    \item Floor every $k_\ell$ to an integer.  The integer total will be short of the budget by some amount~$\delta$.
+    \item Sort layers by \textbf{fractional part} (descending): a layer with fractional part $0.9$ gets $+1$ before a layer with $0.1$.
+    \item Break ties by protection score, then by raw rank.
+    \item Add $+1$ to the top-$\delta$ layers until the integer sum equals $k_{\mathrm{uniform}} \times L$ exactly.
+\end{enumerate}
+
+This is essentially banker's rounding: give extra rank units to layers that were closest to rounding up anyway, with protection score as tiebreaker.
+
+\end{document}

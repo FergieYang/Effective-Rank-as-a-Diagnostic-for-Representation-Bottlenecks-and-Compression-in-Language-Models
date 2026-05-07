@@ -1,0 +1,537 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{float}
+
+\title{Research Progress Report:\\Effective Rank as a Diagnostic for Representation Bottlenecks and Compression in Language Models}
+\author{Peng Zhao \and Fergie Yang\\[6pt]
+Center for Data Science, New York University\\
+PSYCH-GA 3505 / DS-GA 3001: Information Theory and Cognition\\
+Instructor: Noga Zaslavsky \quad TA: Moufan Li}
+\date{April 29, 2026}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+\newpage
+
+%% ==========================================================================
+%%  PART 1: RESEARCH PLAN FROM PROPOSAL
+%% ==========================================================================
+\part{Research Plan from the Proposal}
+
+\section{Motivation and Background}
+
+Large language models (LLMs) follow a common design pattern: they are built in an overparameterized fashion and subsequently compressed after training, most often through post-training quantization or low-rank factorization.  This practice raises a fundamental question: \emph{how much of the parameter space is actually utilised by a trained model, in both its intermediate representations and its weight matrices?}
+
+If a trained network uses far fewer effective directions than its nominal dimensionality would suggest, then the spectra of its representations and weights should reveal this.  Our project proposes \textbf{effective rank}---the exponential of the spectral entropy of the singular-value distribution, as defined by Roy \& Vetterli (2007) \cite{roy2007effective}---as a lightweight, layer-level diagnostic that can simultaneously:
+\begin{enumerate}[label=(\alph*)]
+    \item reveal \emph{representation bottlenecks} (layers whose internal dimensionality is compressed),
+    \item predict \emph{compressional potential} (which layers can tolerate aggressive low-rank or low-bit approximation), and
+    \item connect to the \emph{Information Bottleneck} (IB) framework by serving as a tractable proxy for the mutual information complexity term $I(T;X)$ that is otherwise intractable in high-dimensional continuous spaces.
+\end{enumerate}
+
+\subsection{Connection to Information Theory and Cognition}
+
+This project is situated within the course ``Information Theory and Cognition,'' whose central framework is the Information Bottleneck (IB) method developed by Tishby, Pereira \& Bialek (1999) \cite{tishby1999information}.  The IB formalises optimal compression: given an input $X$ and a relevant variable $Y$, find a compressed representation $T$ that minimises the complexity $I(T;X)$ while maximising the informativeness $I(T;Y)$:
+\[
+    \mathcal{L}_{\mathrm{IB}} = I(T;X) - \beta \cdot I(T;Y).
+\]
+Tishby \& Zaslavsky (2015) \cite{tishby2015deep} argued that each layer of a deep neural network can be viewed as an IB representation, with optimal architectures corresponding to bifurcation points on the IB tradeoff curve.
+
+The key bridge is provided by the ``Inductive Bottleneck'' paper (arXiv:2512.07331) \cite{inductivebottleneck2025}, which uses the Effective Encoding Dimension (EED)---defined identically to Roy \& Vetterli's effective rank---as a tractable proxy for $I(T;X)$ in Vision Transformers.  Their central finding is a \textbf{U-shaped effective rank profile} across layers: representations compress in middle layers and expand in later layers, mirroring the compression phase predicted by IB theory.
+
+Our project asks: \emph{do language models, trained to model human language, develop analogous bottleneck-structured representations?}  This connects to several cognitive science concepts:
+\begin{itemize}
+    \item \textbf{Efficient coding hypothesis} (Barlow, 1961) \cite{barlow1961possible}: neural systems encode sensory information by reducing statistical redundancy.  Low effective rank in learned representations implies efficient codes.
+    \item \textbf{Cognitive bottlenecks}: biological cognition operates under severe resource constraints---limited attention, bounded working memory ($\sim$4 items).  These bottlenecks force the brain to extract maximally relevant compressed representations.  Post-training compression of LLMs is an artificial analogue: which layers can tolerate aggressive ``cognitive'' compression?
+    \item \textbf{Language as compression} (Zaslavsky et al., 2018) \cite{zaslavsky2018efficient}: human languages achieve near-optimal compression on the IB tradeoff curve when mapping continuous meaning spaces into finite lexicons.  An LLM trained on language should reflect this compression structure internally.
+\end{itemize}
+
+\section{Concrete Research Plan}
+
+The proposal specifies the following experimental pipeline, centred on a single layer of a neural network:
+\[
+    y = \phi(Wu), \qquad u = \mathrm{Norm}(x),
+\]
+where $x$ is the activation from the previous layer, $u$ is the normalised activation, $W$ is the weight matrix, and $\phi$ is the nonlinearity.
+
+\subsection{Step 1: Model Selection}
+Choose small language models that are computationally tractable.  The original proposal targeted Qwen 3 0.6B; the executed experiments expanded to four models.
+
+\subsection{Step 2: Data Collection}
+Collect normalised activations $[u_1, u_2, \ldots]$ from calibration data (WikiText-2 training set) and stack them into a matrix $U$.  Also collect the trained weight matrices $W$ for each layer.
+
+\subsection{Step 3: Spectral Decomposition}
+Compute the spectra of both the activation covariance and the weight matrices:
+\[
+    U^T U = Q \Lambda Q^T, \qquad W = U \Sigma V^T,
+\]
+yielding eigenvalues $\{\lambda_i\}$ and singular values $\{\sigma_i\}$.
+
+\subsection{Step 4: Effective Rank Computation}
+Compute spectral entropy and effective rank:
+\[
+    p_i = \frac{\lambda_i}{\sum_j \lambda_j} \quad \text{or} \quad p_i = \frac{\sigma_i}{\sum_j \sigma_j}, \qquad
+    H(\mathbf{p}) = -\sum_i p_i \log p_i, \qquad
+    r_u \text{ or } r_w = e^{H(\mathbf{p})},
+\]
+where $r_u$ is the effective rank of the representation spectrum (intrinsic dimensionality of the input) and $r_w$ is the effective rank of the weight spectrum (intrinsic capacity of the operator).
+
+\subsection{Step 5: Diagnosis and Compression}
+Use $r_u$ and $r_w$ to guide diagnosis and compression:
+\begin{itemize}
+    \item A large $r_u$ with a small $r_w$ may indicate a \emph{bottleneck}.
+    \item A small $r_u$ with a small $r_w$ may indicate a well-matched, compressible layer.
+    \item A small $r_u$ with a large $r_w$ suggests the weights can be compressed.
+    \item Test direct low-rank factorization: $Wu \approx W V_{r_u} V_{r_u}^T u$.
+    \item Test allocating quantisation bits based on effective rank (low $r_{\mathrm{eff}}$ $\rightarrow$ lower bits).
+\end{itemize}
+
+\subsection{Step 6: Evaluation}
+Compare compressed models against the uncompressed baseline using perplexity on the WikiText-2 test/validation set, and visualise how $r_u$ and $r_w$ change across layers to identify structural patterns.
+
+
+%% ==========================================================================
+%%  PART 2: EXPERIMENTAL WORK AND FINDINGS
+%% ==========================================================================
+\part{Experimental Implementation and Findings}
+
+This part describes the complete experimental pipeline implemented by Peng Zhao, including the logic behind each stage, the design choices made, and the empirical results obtained.
+
+\section{Pipeline Overview}
+
+The experiments are organised as a six-stage pipeline (stages 0--5), implemented as standalone Python scripts that communicate through well-defined file interfaces.  The pipeline was executed across \textbf{four models}:
+\begin{enumerate}
+    \item \textbf{Qwen3-0.6B} --- 28 layers, hidden size 1024, intermediate size 3072
+    \item \textbf{Llama-3.2-1B} --- 16 layers, hidden size 2048, intermediate size 8192
+    \item \textbf{Qwen2.5-1.5B} --- 28 layers, hidden size 1536, intermediate size 8960
+    \item \textbf{SmolLM2-1.7B} --- 24 layers, hidden size 2048, intermediate size 8192
+\end{enumerate}
+
+\noindent All models were evaluated on WikiText-2 with identical tokenisation and batching procedures.
+
+\section{Stage 0: Data and Model Setup}
+
+Two simple download scripts (\texttt{0\_download\_model.py}, \texttt{0\_download\_data.py}) handle:
+\begin{itemize}
+    \item Downloading each Hugging Face base model into \texttt{artifact/models/<model\_id>/base}.
+    \item Downloading the WikiText-2 corpus into \texttt{data/wikitext2/} (train, validation, test splits).
+\end{itemize}
+The design choice here is intentional minimalism: keep setup completely separate from analysis.
+
+\section{Stage 1: Collecting Layer-wise Statistics}
+\label{sec:stage1}
+
+\texttt{1\_collect\_statistics.py} is the core data-collection script.  It performs a single forward pass over the calibration data (up to 65,536 token activations per layer from WikiText-2 training set, with sequence length 512) and collects the following quantities for each of the 28 (or 16/24) transformer layers:
+
+\subsection{Compression Scope}
+A critical design decision: the project compresses only the MLP \texttt{gate\_proj} and \texttt{up\_proj} weight matrices.  The MLP \texttt{down\_proj} and all attention projections are left uncompressed.  This focuses the analysis on the two parallel linear projections that feed the SwiGLU activation.
+
+\subsection{Activation Locations}
+Three activation locations are monitored per layer:
+\begin{itemize}
+    \item \textbf{MLP input}: output of \texttt{post\_attention\_layernorm} (the normalised activation seen by \texttt{gate\_proj} and \texttt{up\_proj}).
+    \item \textbf{MLP output}: output of \texttt{layer.mlp} (the contribution added to the residual stream).
+    \item \textbf{Residual stream}: input to \texttt{post\_attention\_layernorm} (the pre-normalisation residual, used only as a diagnostic reference).
+\end{itemize}
+
+\subsection{Statistics Collected}
+For each layer, the script computes:
+\begin{itemize}
+    \item \textbf{Weight effective rank} for \texttt{gate\_proj} and \texttt{up\_proj}: computed from singular values using $p_i = \sigma_i / \sum_j \sigma_j$, then $r_w = \exp(H(\mathbf{p}))$.  The mean of the two weight effective rank ratios ($r_w / \min(m,n)$) serves as the layer-level weight rank summary.
+    \item \textbf{Activation effective rank (centered)}: computed from eigenvalues of the empirical covariance matrix $\mathrm{Cov}(u) = \mathbb{E}[uu^T] - \mathbb{E}[u]\mathbb{E}[u]^T$.  Both MLP input and MLP output centered effective ranks are computed.
+    \item \textbf{Activation effective rank (uncentered)}: computed from eigenvalues of the uncentered second moment $\mathbb{E}[uu^T]$.  This variant captures the mean component as well.
+    \item \textbf{MLP output uncentered trace}: $\mathrm{tr}(\mathbb{E}[xx^T])$, equivalently the per-token mean squared norm $\mathbb{E}[\|x\|^2]$.  The natural logarithm of this quantity serves as the \textbf{main importance/energy signal}.
+    \item \textbf{Residual stream uncentered trace}: retained only as a diagnostic reference because the residual stream magnitude is path-dependent and can be distorted by earlier outlier layers.
+\end{itemize}
+
+\subsection{Important Interpretation Choices}
+\begin{itemize}
+    \item \textbf{Centered} activation effective rank is the main rank-based signal (dimensionality of the \emph{spread} of activations, ignoring the mean).
+    \item \textbf{Log MLP output uncentered trace} is the main importance signal (how strongly a layer writes to the residual stream).
+    \item Residual-relative trace is \emph{not} used as the primary cross-layer importance metric.
+\end{itemize}
+
+\subsection{Cached Artefacts}
+The script saves second-moment matrices (\texttt{mlp\_input\_second\_moments.pt}, \texttt{mlp\_output\_second\_moments.pt}), eigenvalue spectra (\texttt{activation\_eigenvalues.pt}), weight singular values (\texttt{weight\_singular\_values.pt}), and a summary CSV (\texttt{layer\_statistics.csv}).  These caches are reused by downstream stages without re-running inference.
+
+\section{Stage 2: Descriptive Visualisation}
+
+\texttt{2\_plot\_statistics.py} produces three families of plots per model:
+\begin{enumerate}
+    \item \textbf{Compressibility profile}: layer-wise plots of MLP input centered e-rank ratio, MLP output centered e-rank ratio, MLP input/output uncentered e-rank ratio, and mean weight e-rank ratio.
+    \item \textbf{Importance profile}: layer-wise plot of MLP output log trace (main signal) and residual-stream log trace (diagnostic reference).
+    \item \textbf{Compressibility--importance overlay}: the mean of input-centered and output-centered e-rank ratios (``compressibility summary'') overlaid with min-max normalised MLP output log trace (``importance summary'').
+\end{enumerate}
+Stage 2 is purely descriptive; it does not compute any budget or decision score.
+
+\section{Stage 3: Rank Budget Computation and Compression}
+
+This is the central experimental contribution, implemented across two scripts.
+
+\subsection{Rank Budget Computation (\texttt{3\_compute\_rank\_budgets.py})}
+
+The script converts the stage-1 statistics into a layerwise rank-budget proposal via a simple, interpretable formula.
+
+\paragraph{Rank signal.}
+\[
+    \text{rank\_signal}_\ell = \frac{1}{2}\left(\frac{r_{u,\text{in}}^{(\ell)}}{d} + \frac{r_{u,\text{out}}^{(\ell)}}{d_{\text{out}}}\right),
+\]
+where $r_{u,\text{in}}^{(\ell)}$ and $r_{u,\text{out}}^{(\ell)}$ are the centered activation effective ranks of the MLP input and output, and $d$, $d_{\text{out}}$ are their respective feature sizes.  This is then min-max normalised across layers.
+
+\paragraph{Importance signal.}
+\[
+    \text{importance\_signal}_\ell = \text{min-max-normalise}\left(\log \mathrm{tr}\left(\mathbb{E}\left[x_\ell x_\ell^T\right]\right)\right).
+\]
+
+\paragraph{Protection score.}
+\[
+    \text{protection\_score}_\ell = w \cdot \text{rank\_signal}_\ell + (1-w) \cdot \text{importance\_signal}_\ell,
+\]
+where $w \in [0,1]$ is a tunable weight.  Higher protection score $\Rightarrow$ more rank budget (the layer is either structurally complex or writes strongly to the residual stream).
+
+\paragraph{Budget allocation.}
+\begin{enumerate}
+    \item Choose compression ratio $\alpha$: the target factorised/dense parameter ratio.
+    \item Derive the uniform rank implied by $\alpha$: $k_{\text{uniform}} = \alpha \cdot \frac{d_{\text{hidden}} \cdot d_{\text{intermediate}}}{d_{\text{hidden}} + d_{\text{intermediate}}}$.
+    \item Redistribute the same total budget $k_{\text{uniform}} \times L$ across layers proportionally to $\text{protection\_score}_\ell$.
+    \item Enforce integer constraints and the upper bound $k \leq d_{\text{hidden}}$.
+    \item Adjust rounding so the final layerwise total matches the uniform total exactly.
+\end{enumerate}
+
+\paragraph{Experimental grid.}
+The experiments swept over:
+\begin{itemize}
+    \item $\alpha \in \{0.50, 0.80\}$ (50\% and 80\% of dense parameters retained)
+    \item $w \in \{0.25, 0.50, 0.75\}$
+\end{itemize}
+
+\subsection{Model Compression (\texttt{3\_compress\_models.py})}
+
+For each budget setting, three compression methods are applied:
+
+\paragraph{Plain SVD Uniform.}
+For each target layer, compute the truncated SVD $W \approx U_k \Sigma_k V_k^T$ and replace the weight with the rank-$k$ approximation.  The same uniform rank $k_{\text{uniform}}$ is used for every layer.
+
+\paragraph{Activation-Aware Uniform.}
+Following the ASVD (Activation-aware SVD) paradigm:
+\begin{enumerate}
+    \item Compute the empirical second moment of MLP inputs: $S = \mathbb{E}[uu^T]$.
+    \item Compute $S^{1/2}$ and $S^{-1/2}$ (with eigenvalue floor $10^{-8}$).
+    \item Form the transformed weight: $\widetilde{W} = W \cdot S^{1/2}$.
+    \item Compute truncated SVD of $\widetilde{W}$ at rank $k$.
+    \item Reconstruct: $W_k^{\text{ASVD}} = \widetilde{U}_k \widetilde{\Sigma}_k \widetilde{V}_k^T \cdot S^{-1/2}$.
+\end{enumerate}
+This ensures that the low-rank approximation minimises the \emph{activation-weighted} reconstruction error $\|Wx - W_k x\|$ rather than the raw Frobenius error $\|W - W_k\|_F$.  The same uniform rank is used for all layers.
+
+\paragraph{Activation-Aware Layerwise.}
+Same activation-aware SVD procedure, but now each layer receives its own rank from the stage-3 budget allocation.  This is the method that tests the core hypothesis: \emph{can effective-rank-guided layerwise allocation outperform uniform allocation?}
+
+\section{Stage 4: Perplexity Benchmarking}
+
+\texttt{4\_benchmark\_perplexity.py} evaluates every compressed variant and the base model on the WikiText-2 validation set using fixed token windows (length 512, up to 256 windows, batch size 4).  It computes:
+\[
+    \text{Perplexity} = \exp\left(\frac{1}{N}\sum_{i=1}^{N} -\log p(x_i \mid x_{<i})\right),
+\]
+where $N$ is the total number of predicted tokens.
+
+\section{Stage 5: Cross-Model Analysis}
+
+Two analysis scripts produce cross-model comparisons:
+
+\subsection{Layer Analysis (\texttt{5\_layer\_analysis.py})}
+
+Produces two key plots:
+\begin{enumerate}
+    \item \textbf{Rank--trace scatter plot}: normalised rank signal vs.\ normalised trace signal across all models and layers, with per-model and pooled Pearson correlation.
+    \item \textbf{Rank--trace trend plot}: normalised rank and trace signals plotted against normalised layer depth, revealing structural trends (early/middle/late regions).
+\end{enumerate}
+
+\subsection{Compression Analysis (\texttt{5\_compression\_analysis.py})}
+
+Produces:
+\begin{enumerate}
+    \item Per-model comparison plots: activation-aware uniform (horizontal baseline) vs.\ activation-aware layerwise (varying with $w$), with $\Delta$-NLL annotations.
+    \item Cross-model aggregate plot: layerwise--uniform delta NLL vs.\ $w$.
+    \item Cross-model heatmap: delta NLL by model and $w$.
+\end{enumerate}
+
+\section{Key Experimental Results}
+
+\subsection{Finding 1: Strong Negative Rank--Trace Correlation}
+
+Across all four models, there is a consistent \textbf{strong negative correlation} between the normalised rank signal (activation effective rank ratio) and the normalised trace signal (MLP output energy):
+
+\begin{table}[H]
+\centering
+\caption{Pearson correlation between normalised rank signal and normalised trace signal.}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Model} & \textbf{Layers} & \textbf{Pearson $r$} \\
+\midrule
+Llama-3.2-1B   & 16 & $-0.72$ \\
+Qwen2.5-1.5B   & 28 & $-0.73$ \\
+Qwen3-0.6B     & 28 & $-0.76$ \\
+SmolLM2-1.7B   & 24 & $-0.74$ \\
+\midrule
+All pooled      & 96 & $-0.69$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Interpretation.}  Layers that have low effective rank (concentrated spectrum, fewer effective dimensions) tend to write more strongly to the residual stream (higher trace).  This suggests a \emph{rank--importance tradeoff}: the most ``important'' layers (highest energy contribution) are precisely those that operate in the most compressed subspace.  This is consistent with the IB perspective: layers that have compressed their representations the most ($\downarrow I(T;X)$) while maintaining high downstream contribution ($\uparrow I(T;Y)$) sit at efficient points on the IB tradeoff curve.
+
+\subsection{Finding 2: Activation-Aware SVD Massively Outperforms Plain SVD}
+
+Plain truncated SVD is catastrophically poor for LLM compression.  Activation-aware SVD recovers most of the quality:
+
+\begin{table}[H]
+\centering
+\caption{Perplexity comparison at $\alpha=0.80$ (80\% parameter retention for gate/up projections).}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{Qwen3-0.6B} & \textbf{Llama-3.2-1B} & \textbf{Qwen2.5-1.5B} & \textbf{SmolLM2-1.7B} \\
+\midrule
+Base (dense)                 & 31.9 & 13.4 & 13.1 & 10.6 \\
+Plain SVD uniform            & 2980 & 725  & 734  & 289  \\
+Activation-aware uniform     & 45.8 & 27.7 & 18.9 & 18.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent The plain SVD is $50$--$100\times$ worse than the base model, while activation-aware SVD preserves reasonable quality ($1.4$--$2.1\times$ base perplexity at $\alpha=0.80$).  This validates the roadmap's recommendation to use ASVD-style compression rather than naive SVD truncation.
+
+\subsection{Finding 3: Layerwise Allocation---Honest, Mixed Results}
+
+The central question---can effective-rank-guided layerwise allocation beat uniform allocation?---yields a nuanced answer:
+
+\begin{table}[H]
+\centering
+\caption{Activation-aware perplexity: uniform vs.\ best layerwise setting at $\alpha=0.80$.}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Uniform} & \textbf{Best Layerwise} & \textbf{Best $w$} \\
+\midrule
+Qwen3-0.6B   & 45.8  & 52.8  & 0.50 \\
+Llama-3.2-1B & 27.7  & 163.7 & 0.25 \\
+Qwen2.5-1.5B & 18.9  & 20.0  & 0.50 \\
+SmolLM2-1.7B & 18.0  & 132.4 & 0.75 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{At $\alpha = 0.80$, the layerwise allocation consistently fails to beat the uniform baseline.}  For Llama-3.2-1B and SmolLM2-1.7B, the layerwise variants are dramatically worse.
+
+At $\alpha = 0.50$ (more aggressive compression), the picture is more mixed:
+
+\begin{table}[H]
+\centering
+\caption{Activation-aware perplexity at $\alpha=0.50$: uniform vs.\ layerwise.}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Uniform} & \textbf{$w{=}0.25$} & \textbf{$w{=}0.50$} & \textbf{$w{=}0.75$} \\
+\midrule
+Qwen3-0.6B   & 103.4 & 188.7 & 121.2 & 111.3 \\
+Llama-3.2-1B & 258.5 & 3361.8 & 2952.5 & 2611.0 \\
+Qwen2.5-1.5B & 64.7 & 947.7 & 154.7 & 110.0 \\
+SmolLM2-1.7B & 143.9 & 4034.3 & 2049.8 & 1371.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{At $\alpha = 0.50$, the layerwise allocation is strictly worse than uniform for all models and all $w$ settings.}
+
+\subsection{Finding 4: Layer-2 Anomaly in Qwen3-0.6B}
+
+The Qwen3-0.6B layer statistics reveal a striking anomaly at layer 2: the MLP output effective rank drops to $\sim$1.0 (ratio $\approx 0.001$) while the MLP output uncentered trace spikes to $\sim$90{,}318 (log $\approx 11.4$).  This means layer 2's MLP output is essentially rank-1 but with enormous magnitude---a classic ``outlier layer'' that concentrates all its energy in a single direction.  Subsequent layers (3+) show the trace dropping back to $\sim$47--80, suggesting the residual stream has absorbed this spike.
+
+\subsection{Summary of the Pipeline's Logic}
+
+The thinking logic behind the entire pipeline can be summarised as:
+
+\begin{enumerate}
+    \item \textbf{Measure two orthogonal signals}: rank structure (how complex is the layer's representation?) and energy/importance (how strongly does the layer write to the residual stream?).
+    \item \textbf{Combine them}: a layer that is both structurally complex (high rank) and energetically important (high trace) deserves more rank budget (higher ``protection'').
+    \item \textbf{Test the hypothesis honestly}: compare the layerwise allocation against a uniform baseline using the same total rank budget, so any improvement must come from \emph{allocation} rather than \emph{total capacity}.
+    \item \textbf{Accept negative results}: the pipeline is designed to ``evaluate honestly,'' not to force a win.  The pipeline's own design notes state: ``v3 accepts that complicated layerwise allocation may not always beat a uniform budget.''
+\end{enumerate}
+
+%% ==========================================================================
+%%  PART 3: LIMITATIONS AND FUTURE DIRECTIONS
+%% ==========================================================================
+\part{Limitations, Evaluation, and Future Directions}
+
+\section{Honest Evaluation of Current Limitations}
+
+\subsection{Limitation 1: Layerwise Allocation Consistently Underperforms Uniform}
+
+The most significant finding is a \textbf{negative result}: the effective-rank-guided layerwise budget allocation does not outperform the simple uniform baseline on any model at any compression ratio tested.  This is not a minor margin---for some models (Llama-3.2-1B, SmolLM2-1.7B), the layerwise allocation is \emph{catastrophically} worse.
+
+\paragraph{Possible explanations.}
+\begin{enumerate}
+    \item \textbf{The protection score conflates two conflicting signals.}  The rank signal says ``this layer is complex, give it more rank.''  The importance signal says ``this layer writes a lot of energy, protect it.''  But the strong negative correlation ($r \approx -0.7$) means these two signals partially cancel: high-importance layers have low rank, so boosting them via importance but penalising them via rank creates an inconsistent allocation.  The $w$ parameter cannot resolve this tension because the signals are \emph{anti-correlated} by nature.
+    \item \textbf{The last layers are outliers in energy but critical for output quality.}  Late layers in all models show rapidly increasing trace (output energy) but moderate or declining rank.  The layerwise budget may under-allocate rank to these critical layers at low $w$ (importance-dominated) or over-allocate to middle layers at high $w$ (rank-dominated).
+    \item \textbf{Effective rank is a scalar summary of the full spectrum.}  Two layers can have the same effective rank but very different spectral shapes (e.g., one with a smooth exponential decay, another with a sharp knee).  The layerwise budget treats them identically, potentially misallocating rank.
+    \item \textbf{Error propagation across layers.}  The per-layer analysis treats each layer independently, but compression errors propagate through the residual stream.  A small error in an early layer can amplify through subsequent layers.  Uniform allocation may be more robust to this cascading effect.
+\end{enumerate}
+
+\subsection{Limitation 2: Only MLP Gate/Up Projections Are Compressed}
+
+The current pipeline compresses only 2 of the 7 sub-modules per transformer block (gate\_proj and up\_proj out of Q, K, V, O, gate, up, down).  This means:
+\begin{itemize}
+    \item The attention mechanism (which is known to have significant low-rank structure, especially in GQA architectures) is left untouched.
+    \item The MLP down\_proj (which maps back from intermediate to hidden size) is not compressed, even though its activation statistics are influenced by the gate/up compression.
+    \item The overall model compression is modest: even at $\alpha=0.50$, only the gate/up projections are halved, which reduces total parameters by far less than 50\%.
+\end{itemize}
+
+\subsection{Limitation 3: No Quantisation Experiments}
+
+The original proposal planned to test quantisation-bit allocation guided by effective rank (e.g., Q3 for low-rank layers, Q5 for high-rank layers).  This was not implemented.  The current experiments only test low-rank SVD factorisation.  Quantisation is a fundamentally different compression mechanism that may interact differently with effective rank.
+
+\subsection{Limitation 4: Single Calibration Dataset}
+
+All experiments use WikiText-2 for both calibration (collecting activation statistics) and evaluation (measuring perplexity).  This raises the concern that the statistics, and therefore the compression decisions, are tuned to WikiText-2's distribution.  It is unknown whether the effective rank profiles would generalise to code, conversation, or multilingual data.
+
+\subsection{Limitation 5: No Per-Layer Sensitivity Analysis}
+
+The roadmap called for per-layer quantisation sensitivity analysis ($\Delta \text{PPL}_\ell$: quantise one layer at a time, measure perplexity degradation).  This ``ground truth'' sensitivity was never computed, so we cannot evaluate how well effective rank \emph{predicts} per-layer compression sensitivity.  Without this, we cannot answer the proposal's core question: is effective rank a good \emph{predictor} of compressional potential?
+
+\subsection{Limitation 6: $\sigma$ vs.\ $\sigma^2$ Asymmetry}
+
+As noted in the roadmap's critical review, the weight effective rank $r_w$ is computed from singular values ($p_i = \sigma_i / \sum_j \sigma_j$), while the activation effective rank $r_u$ is computed from covariance eigenvalues ($p_i = \lambda_i / \sum_j \lambda_j$, where $\lambda_i = \sigma_i^2$).  These are fundamentally different normalisations that are not directly comparable, yet the pipeline combines them into a single protection score.
+
+\subsection{Limitation 7: No Mathematical Proof Completed}
+
+The proposal promised a ``mathematical proof of effective rank implying good compression performance.''  The roadmap sketched three theorems (low-rank approximation error bound, rate-distortion connection, effective rank as IB complexity proxy), but none were formally completed in the implementation.
+
+\section{Future Directions}
+
+\subsection{Direction 1: Per-Layer Sensitivity Analysis}
+
+The single most impactful extension would be to compute the per-layer compression sensitivity $\Delta\text{PPL}_\ell$: compress one layer at a time and measure the perplexity degradation.  This provides the ``ground truth'' against which to evaluate effective rank as a predictor.  Key analyses:
+\begin{itemize}
+    \item Compute Spearman and Pearson correlation between $r_u^{(\ell)}$, $r_w^{(\ell)}$, $\text{trace}^{(\ell)}$, and $\Delta\text{PPL}_\ell$.
+    \item Compare effective rank against established sensitivity metrics: Hessian trace, activation kurtosis, outlier magnitude.
+    \item Generate scatter plots of each metric vs.\ $\Delta\text{PPL}_\ell$ to visualise predictive power.
+\end{itemize}
+
+\subsection{Direction 2: Better Budget Allocation Strategies}
+
+The current additive protection score may be too simplistic.  Alternatives to explore:
+\begin{itemize}
+    \item \textbf{Importance-only allocation}: since the rank-importance anti-correlation undermines the additive score, try allocating rank \emph{purely} based on importance (trace), ignoring the rank signal entirely.
+    \item \textbf{Multiplicative score}: $\text{protection} = \text{rank\_signal}^w \cdot \text{importance\_signal}^{1-w}$ (geometric mean), which behaves differently under anti-correlation.
+    \item \textbf{Spectral-entropy threshold}: instead of using the scalar effective rank, use the full cumulative spectral entropy to set per-layer truncation points (as in ARSVD \cite{cherukuri2025arsvd}).
+    \item \textbf{Oracle-guided allocation}: use the per-layer sensitivity $\Delta\text{PPL}_\ell$ to derive the optimal allocation, then measure how close effective-rank-based allocation comes to this oracle.
+\end{itemize}
+
+\subsection{Direction 3: Information-Theoretic Analysis}
+
+To strengthen the IB connection:
+\begin{itemize}
+    \item Plot an ``information plane'' analogue: $(r_u^{(\ell)}, \text{downstream contribution}_\ell)$ for each layer, and check if this reveals an IB-like tradeoff.
+    \item Test whether the U-shaped effective rank profile observed in Vision Transformers (Inductive Bottleneck paper) also appears in language models.  The current data hints at a \emph{monotonically} decreasing rank profile in late layers, which may reflect a fundamentally different architecture.
+    \item Formally prove (under Gaussian assumptions) the rate-distortion bound: $R(D) \leq \frac{r_{\text{eff}}^{(\lambda)}}{2} \cdot \log \frac{\bar{\lambda}}{D}$, connecting effective rank to minimum bits needed.
+\end{itemize}
+
+\subsection{Direction 4: Expanding Compression Scope}
+
+\begin{itemize}
+    \item \textbf{Attention projections}: apply the same spectral analysis and SVD compression to Q, K, V, O projections.  GQA architectures (Llama-3.2) may show particularly interesting rank structure.
+    \item \textbf{MLP down\_proj}: complete the MLP compression by also factorising the down projection.
+    \item \textbf{Quantisation experiments}: implement the originally proposed effective-rank-guided bit allocation (Q3/Q4/Q5 assignment based on layer effective rank) using GPTQ or AWQ as backends.
+\end{itemize}
+
+\subsection{Direction 5: Scale and Generalisation}
+
+\begin{itemize}
+    \item Test on larger models (7B+ parameters) where overparameterisation is more pronounced and effective rank patterns may be more distinct.
+    \item Evaluate on diverse calibration datasets (code, conversation, multilingual) to test whether effective rank profiles are distribution-invariant.
+    \item Compare findings across model families to test universality of the rank--trace anti-correlation.
+\end{itemize}
+
+\subsection{Direction 6: Cognitive Science Framing}
+
+\begin{itemize}
+    \item Frame the observed rank--trace anti-correlation as evidence of efficient coding: layers that contribute the most ``information'' to downstream processing do so through the most compressed (lowest-rank) representations, analogous to the retina's compression of $10^8$ photoreceptors into $10^6$ optic nerve fibres.
+    \item Connect the robustness of certain layers to compression with ``cognitive noise tolerance'': which internal representations are robust to the kind of lossy compression that biological neural systems must endure?
+    \item Investigate whether the outlier layers (e.g., layer 2 in Qwen3-0.6B with rank $\approx 1$) serve a functional role analogous to specific cognitive bottlenecks.
+\end{itemize}
+
+\section{Conclusion}
+
+The current experimental pipeline represents a well-engineered, honest evaluation of effective rank as a diagnostic for LLM compression.  The key positive findings are:
+\begin{enumerate}
+    \item Activation-aware SVD dramatically outperforms plain SVD, validating the importance of considering activation statistics in compression.
+    \item A strong, consistent negative correlation between effective rank and output energy exists across all four models tested, suggesting a fundamental structure in how transformer layers allocate representational capacity.
+    \item The effective rank profile reveals meaningful layer-level structure that connects naturally to information-theoretic concepts.
+\end{enumerate}
+
+The key negative finding---that effective-rank-guided layerwise allocation does not outperform uniform allocation---is itself informative.  It suggests that effective rank alone is insufficient as a compression guide, and that the interaction between spectral structure, activation magnitudes, and error propagation across layers requires a more sophisticated treatment.  The most promising next steps are per-layer sensitivity analysis (to validate effective rank as a predictor rather than a budget tool) and deeper information-theoretic framing (to connect the empirical findings to the IB framework central to this course).
+
+\begin{thebibliography}{99}
+
+\bibitem{roy2007effective}
+O.~Roy and M.~Vetterli, ``The effective rank: A measure of effective dimensionality,'' in \emph{15th European Signal Processing Conference (EUSIPCO)}, 2007.
+
+\bibitem{tishby1999information}
+N.~Tishby, F.~C.~Pereira, and W.~Bialek, ``The information bottleneck method,'' in \emph{Proc.\ 37th Annual Allerton Conf.}, 1999.
+
+\bibitem{tishby2015deep}
+N.~Tishby and N.~Zaslavsky, ``Deep learning and the information bottleneck principle,'' in \emph{IEEE Information Theory Workshop (ITW)}, 2015.
+
+\bibitem{inductivebottleneck2025}
+``The inductive bottleneck: Data-driven emergence of representational sparsity in vision transformers,'' arXiv:2512.07331, 2025.
+
+\bibitem{barlow1961possible}
+H.~B.~Barlow, ``Possible principles underlying the transformations of sensory messages,'' in \emph{Sensory Communication}, W.~A.~Rosenblith, Ed., MIT Press, 1961.
+
+\bibitem{zaslavsky2018efficient}
+N.~Zaslavsky, C.~Kemp, R.~Regier, and N.~Tishby, ``Efficient compression in color naming and its evolution,'' \emph{Proc.\ Natl.\ Acad.\ Sci.\ USA}, vol.~115, no.~31, pp.~7937--7942, 2018.
+
+\bibitem{dohare2024loss}
+S.~Dohare, J.~F.~Hernandez-Garcia, Q.~Lan, et al., ``Loss of plasticity in deep continual learning,'' \emph{Nature}, vol.~632, pp.~768--774, 2024.
+
+\bibitem{lin2024awq}
+J.~Lin, J.~Tang, H.~Tang, S.~Yang, X.~Zhang, and S.~Han, ``AWQ: Activation-aware weight quantization for LLM compression and acceleration,'' in \emph{MLSys}, 2024. arXiv:2306.00978.
+
+\bibitem{frantar2023gptq}
+E.~Frantar, S.~Ashkboos, T.~Hoefler, and D.~Alistarh, ``GPTQ: Accurate post-training quantization for generative pre-trained transformers,'' in \emph{ICLR}, 2023. arXiv:2210.17323.
+
+\bibitem{yuan2023asvd}
+Z.~Yuan et al., ``ASVD: Activation-aware singular value decomposition for compressing large language models,'' arXiv:2312.05821, 2023.
+
+\bibitem{garrido2023rankme}
+Q.~Garrido, R.~Balestriero, L.~Najman, and Y.~LeCun, ``RankMe: Assessing the downstream performance of pretrained self-supervised representations by their rank,'' in \emph{ICML}, 2023.
+
+\bibitem{aghajanyan2021intrinsic}
+A.~Aghajanyan, L.~Zettlemoyer, and S.~Gupta, ``Intrinsic dimensionality explains the effectiveness of language model fine-tuning,'' in \emph{ACL}, 2021. arXiv:2012.13255.
+
+\bibitem{shwartzZiv2017opening}
+R.~Shwartz-Ziv and N.~Tishby, ``Opening the black box of deep neural networks via information,'' arXiv:1703.00810, 2017.
+
+\bibitem{saxe2018information}
+A.~M.~Saxe et al., ``On the information bottleneck theory of deep learning,'' in \emph{ICLR}, 2018.
+
+\bibitem{cherukuri2025arsvd}
+V.~Cherukuri, ``ARSVD: Low-rank matrix approximation via spectral entropy,'' arXiv:2504.20078, 2025.
+
+\bibitem{bondarenko2025resq}
+U.~Bondarenko et al., ``ResQ: Mixed-precision quantization of large language models with low-rank residuals,'' in \emph{ICML}, 2025.
+
+\bibitem{huang2022rank}
+W.~Huang, Y.~Wang, L.~Cao, et al., ``Rank diminishing in deep neural networks,'' in \emph{NeurIPS}, 2022.
+
+\bibitem{martin2021predicting}
+C.~H.~Martin and M.~W.~Mahoney, ``Predicting trends in the quality of state-of-the-art neural networks without access to training or testing data,'' \emph{Nature Communications}, vol.~12, 2021.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,380 @@
+v3 pipeline logic notes
+
+Purpose
+- This is a lightweight design note for the clean v3 workflow.
+- It records the logic of each stage without turning the project into a polished README yet.
+- The main project goals are simplicity, interpretability, and a clean final implementation.
+
+
+Stage 0: download model and data
+
+Files
+- script/0_download_model.py
+- script/0_download_data.py
+
+Logic
+- Keep model download and data download separate.
+- Download one Hugging Face base model into:
+  artifact/models/<base_model_id>/base
+- Download the calibration text corpus into:
+  data/wikitext2
+
+Design choices
+- Keep stage 0 plain and minimal.
+- Avoid mixing setup with analysis or compression logic.
+- Keep directory layout stable so later scripts can assume canonical paths.
+
+
+Stage 1: collect statistics
+
+File
+- script/1_collect_statistics.py
+
+Main goal
+- Collect the layerwise statistics that we actually use in the final project.
+
+Compression scope assumed by stage 1
+- The project compresses only:
+  - mlp.gate_proj
+  - mlp.up_proj
+- We do not collect the large intermediate h inside the MLP.
+- We do not target down_proj in the default v3 workflow.
+
+Collected activation locations
+- MLP input:
+  post_attention_layernorm output
+- MLP output:
+  layer.mlp output
+- Residual stream reference:
+  input to post_attention_layernorm
+
+Main statistics written to the CSV
+- Weight effective rank for gate_proj and up_proj
+- Mean weight effective-rank ratio
+- MLP input effective rank:
+  - centered
+  - uncentered
+- MLP output effective rank:
+  - centered
+  - uncentered
+- MLP output uncentered trace
+- MLP output uncentered trace log
+- Residual stream uncentered trace
+- Residual stream uncentered trace log
+- Output-to-residual trace ratio
+
+Important interpretation choices
+- Centered activation effective rank is the main rank-based signal.
+- Raw log MLP output uncentered trace is the main importance or energy signal.
+- Residual-relative trace quantities are retained only as diagnostics.
+- Residual-relative trace is not treated as the main cross-layer importance statistic,
+  because the residual stream magnitude is path-dependent and can be distorted by
+  earlier outlier layers.
+
+Cached tensors saved by stage 1
+- activation_eigenvalues.pt
+- mlp_input_second_moments.pt
+- mlp_output_second_moments.pt
+- weight_singular_values.pt
+
+Important storage decision
+- We keep second-moment caches for MLP input and MLP output.
+- We do not store the huge MLP intermediate h second moments in v3.
+
+
+Stage 2: rank analysis plots
+
+File
+- script/2_plot_statistics.py
+
+Main goal
+- Provide descriptive visualization of compressibility-style and importance-style
+  trends across layers.
+- Stage 2 is descriptive only.
+- It does not compute a layer budget or a final combined decision score.
+
+Plot 1
+- compressibility_profile
+
+Purpose
+- Show the detailed layerwise e-rank structure.
+
+Elements
+- MLP input centered e-rank ratio
+- MLP output centered e-rank ratio
+- MLP input uncentered e-rank ratio
+- MLP output uncentered e-rank ratio
+- Mean weight e-rank ratio
+
+Plot 2
+- importance_profile
+
+Purpose
+- Show the detailed layerwise energy or importance trend.
+
+Elements
+- MLP output log trace as the main signal
+- Residual-stream log trace as a diagnostic reference
+
+Plot 3
+- compressibility_importance_overlay
+
+Purpose
+- Give a simple integrated visual comparison of the first two plot families.
+- This is not yet a budget rule.
+
+Elements
+- Compressibility summary:
+  mean of input-centered and output-centered e-rank ratios
+- Importance summary:
+  min-max normalized MLP output log trace
+
+
+Stage 3: compute rank budgets
+
+File
+- script/3_compute_rank_budgets.py
+
+Main goal
+- Convert stage-1 and stage-2 style signals into a simple, interpretable layerwise
+  rank-budget proposal for compression experiments.
+
+Current rank-signal definition
+- raw rank signal =
+  0.5 * (
+    mlp_input_effective_rank_centered_ratio
+    + mlp_output_effective_rank_centered_ratio
+  )
+- rank_signal =
+  min-max normalized raw rank signal
+
+Current importance-signal definition
+- importance_signal =
+  min-max normalized mlp_output_uncentered_trace_log
+
+Current additive protection score
+- protection_score =
+  w * rank_signal + (1 - w) * importance_signal
+
+Interpretation
+- Higher rank signal means the layer looks more structurally complex.
+- Higher importance signal means the layer writes more strongly to the residual stream.
+- Therefore a larger protection score means the layer should receive more rank budget,
+  not less.
+
+Normalization decision
+- Both rank_signal and importance_signal are min-max normalized before the additive
+  mix.
+- This makes the weight parameter w easier to interpret.
+- Without this, the normalized trace signal can dominate simply because it is spread
+  across the full unit interval while the raw rank ratios often live in a much
+  narrower band.
+
+Budget workflow
+1. Choose alpha:
+   target factorized/dense parameter ratio for gate_proj and up_proj.
+2. Derive the uniform rank implied by alpha.
+3. Use protection_score to redistribute the same total budget across layers.
+4. Enforce the upper bound given by hidden size.
+5. Adjust integer ranks so the final layerwise total matches the uniform total exactly.
+
+Main experiment parameters
+- alpha:
+  target compression level
+- w:
+  additive weight on rank_signal versus importance_signal
+
+Grid support
+- Stage 3 accepts multiple alpha values and multiple w values in one command.
+- This allows cleaner experiments over a small parameter grid.
+
+Stage 3 second script: actual compression
+
+File
+- script/3_compress_models.py
+
+Main goal
+- Consume every existing rank-budget CSV for one base model and build the actual
+  compressed model variants.
+
+Compressed variants
+- plain_svd_uniform
+- activation_aware_uniform
+- activation_aware_layerwise
+
+Logic
+- The script no longer takes alpha or w directly.
+- Instead it scans:
+  result/<base_model_id>/3_compression/rank_budgets_*.csv
+- For each saved budget tag, it builds all requested compression methods.
+
+Current storage contract
+- activation_aware_layerwise keeps the full rank-budget tag:
+  - aXX_wYY
+- plain_svd_uniform and activation_aware_uniform keep only the alpha variant tag:
+  - aXX
+- This is intentional because uniform methods do not depend on w.
+- Therefore uniform compressed models are stored once per alpha, not once per
+  (alpha, w) pair.
+
+Current optimization decisions
+- The stage-1 MLP-input second-moment cache is loaded once for the whole stage-3 run.
+- Uniform methods are computed once per alpha and then skipped for repeated w values.
+- Compression metadata now stores alpha and w explicitly.
+- For uniform methods, w is stored as null / None because it is not a real variant axis.
+
+Important efficiency decision
+- Before compressing, the script checks whether a completed output already exists.
+- If the compressed model, compression plan, and compression metadata are already on
+  disk, the script skips that run unless overwrite is explicitly requested.
+
+Activation-aware compression input
+- The activation-aware methods use the saved stage-1 MLP input second moments from:
+  result/<base_model_id>/1_statistics/mlp_input_second_moments.pt
+
+Interpretation
+- plain_svd_uniform is the clean uniform low-rank baseline.
+- activation_aware_uniform isolates the effect of activation-aware approximation while
+  keeping the rank budget uniform.
+- activation_aware_layerwise tests the full v3 layerwise budget idea.
+
+
+Stage 4: benchmark perplexity
+
+File
+- script/4_benchmark_perplexity.py
+
+Main goal
+- Evaluate the base model and all completed compressed variants on the same text
+  dataset with the same tokenization and batching setup.
+
+Logic
+- By default, the script discovers:
+  - the base model
+  - every completed compressed run under artifact/models/<base_model_id>/
+- The evaluation text is tokenized once and then reused for every model.
+- Evaluation is done in padded batches of fixed windows for speed and consistency.
+
+Interaction with stage-3 storage
+- Stage 4 reads alpha, w, and rank-budget tag from compression_meta.json.
+- Because uniform methods are now alpha-only variants, stage 4 should treat:
+  - uniform methods as alpha-only runs
+  - layerwise methods as full (alpha, w) runs
+
+Performance decisions
+- Tokenize once for all runs using the base tokenizer by default.
+- Reuse the same sampled evaluation windows across all models.
+- Use batched forward passes instead of one sequence at a time.
+- Use torch inference mode.
+- Skip benchmark rows that already exist unless recomputation is requested.
+
+Outputs
+- result/<base_model_id>/4_benchmark/perplexity_benchmark.csv
+- result/<base_model_id>/4_benchmark/perplexity_benchmark.json
+
+
+Stage 5 part 2: compression analysis
+
+File
+- script/5_compression_analysis.py
+
+Main goal
+- Visualize the practical compression results after stage 4 benchmarking.
+
+Current outputs
+1. Per-model plot
+   - one vertically stacked subplot per alpha
+   - uniform shown as a horizontal baseline
+   - layerwise shown across w
+   - direct annotations show the layerwise delta relative to uniform
+2. All-model aggregate plot
+   - one vertically stacked subplot per alpha
+   - y-axis is layerwise average NLL minus uniform average NLL
+   - zero is the shared uniform baseline
+   - one line per model
+3. All-model heatmap
+   - one vertically stacked subplot per alpha
+   - x-axis is w
+   - y-axis is model
+   - cell value is layerwise average NLL minus uniform average NLL
+
+Calling convention
+- Stage 5 compression analysis is intended to be called once:
+  - python script/5_compression_analysis.py
+- By default, it discovers every available:
+  - result/<base_model_id>/4_benchmark/perplexity_benchmark.csv
+- Then it writes:
+  - one per-model plot for each discovered benchmark CSV
+  - one cross-model aggregate plot
+  - one cross-model heatmap
+
+Tag-handling rule
+- Compression analysis reads alpha and w from explicit benchmark columns when available.
+- If needed, it falls back to parsing rank_budget_tag.
+- This is important because uniform methods now use alpha-only tags, while layerwise
+  methods use full (alpha, w) tags.
+
+
+Stage 5 part 1: layer analysis
+
+File
+- script/5_layer_analysis.py
+
+Main goal
+- Produce descriptive cross-model EDA plots about the relationship between
+  dimensionality-style and energy-style layer statistics.
+
+Result folder layout
+- Stage 5 uses two top-level result subfolders:
+  - result/5_layer_analysis
+  - result/5_compression_analysis
+
+Current layer-analysis outputs
+1. Scatter plot
+   - normalized rank signal vs normalized trace signal
+   - all models overlaid with different colors
+2. Trend plot
+   - normalized rank and normalized trace across normalized layer depth
+   - all models overlaid on the same figure
+
+Current cross-model color palette to reuse
+- red: #dc2626
+- yellow / gold: #ca8a04
+- blue: #2563eb
+- green: #16a34a
+- purple fallback: #7c3aed
+- cyan fallback: #0891b2
+
+Normalization choices
+- rank signal is normalized within each model
+- trace signal is normalized within each model
+- normalized layer depth is also computed within each model
+
+Purpose
+- This part is meant to surface structural trends in the statistics themselves,
+  such as strong negative correlation between dimensionality-style and
+  energy-style signals across layers.
+
+
+Current project stance
+
+- v3 accepts that complicated layerwise allocation may not always beat a uniform budget.
+- The point of the final implementation is not to force a win at all costs.
+- The point is to build a clean, interpretable workflow that:
+  - measures rank structure,
+  - measures layerwise write strength,
+  - proposes a simple budget rule,
+  - and evaluates it honestly.
+
+
+Current workflow status
+
+- The core v3 workflow is now implemented end to end:
+  - stage 0 setup
+  - stage 1 statistics
+  - stage 2 descriptive plots
+  - stage 3 budget computation and compression
+  - stage 4 perplexity benchmarking
+  - stage 5 layer analysis and compression analysis
+- The remaining work is primarily experimental execution, result selection, and report writing,
+  not core pipeline construction.

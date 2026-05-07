@@ -1,8 +1,20 @@
 .DS_Store
+
+# Downloaded model artifacts
+artifact/models/
+
+*.pt
+
+# Local caches
+**/.cache/
+__pycache__/
+*.py[cod]
+
+# LaTeX build artifacts
+*.synctex.gz
 *.aux
 *.log
 *.out
 *.toc
-*.synctex.gz
 *.fls
 *.fdb_latexmk

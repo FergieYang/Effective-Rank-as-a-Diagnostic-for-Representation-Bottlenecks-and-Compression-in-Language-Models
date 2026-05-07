@@ -1,0 +1,108 @@
+{
+  "created_at": "2026-04-30T13:11:58",
+  "model_path": "artifact/models/Llama-3.2-1B/base",
+  "base_model_id": "Llama-3.2-1B",
+  "data_path": "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/data/wikitext2/train.txt",
+  "output_dir": "/Users/Fergie/Desktop/InfoCog Research project/nyu-26-dsga3001ITC-final-project/result/Llama-3.2-1B/6b_mutual_information_residual",
+  "device": "cpu",
+  "stats_device": "cpu",
+  "merge_device": "cpu",
+  "num_layers": 16,
+  "final_layer_index": 15,
+  "hidden_size": 2048,
+  "max_length": 512,
+  "batch_size": 1,
+  "max_token_samples": 65536,
+  "regularization": 1e-08,
+  "num_windows": 128,
+  "representation": "residual_stream",
+  "hook_target": "transformer layer output (h_\u2113 = residual stream after attention + MLP + skip)",
+  "mi_definition": "Gaussian MI between residual streams h_\u2113 and h_L, computed via log-det (primary) and CCA (validation). Log-det: I = (1/2)(log det \u03a3_l + log det \u03a3_L - log det \u03a3_joint). CCA: I = -(1/2) \u03a3_i log(1 - \u03c1_i\u00b2). The residual stream is full-rank so both methods should agree closely without truncation.",
+  "final_layer_note": "Layer L = final_layer_index is excluded from MI computation because I(h_L; h_L) is degenerate (infinite for continuous Gaussian).",
+  "cca_logdet_discrepancies": [
+    {
+      "layer_index": 1,
+      "mi_logdet": 169.9853515625,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 2,
+      "mi_logdet": 187.0146484375,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 3,
+      "mi_logdet": 207.845703125,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 4,
+      "mi_logdet": 227.037109375,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 5,
+      "mi_logdet": 236.072265625,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 6,
+      "mi_logdet": 244.5048828125,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 7,
+      "mi_logdet": 259.65625,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 8,
+      "mi_logdet": 311.826171875,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 9,
+      "mi_logdet": 399.5869140625,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 10,
+      "mi_logdet": 481.23486328125,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 11,
+      "mi_logdet": 611.27197265625,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 12,
+      "mi_logdet": 781.7314453125,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 13,
+      "mi_logdet": 1114.4560546875,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    },
+    {
+      "layer_index": 14,
+      "mi_logdet": 1790.1455078125,
+      "mi_cca": Infinity,
+      "relative_difference": Infinity
+    }
+  ]
+}

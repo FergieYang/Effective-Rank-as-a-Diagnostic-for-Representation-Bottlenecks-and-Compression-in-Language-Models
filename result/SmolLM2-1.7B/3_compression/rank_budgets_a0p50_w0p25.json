@@ -1,0 +1,29 @@
+{
+  "created_at": "2026-04-28T18:52:37",
+  "base_model_dir": "artifact\\models\\SmolLM2-1.7B\\base",
+  "statistics_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\SmolLM2-1.7B\\1_statistics\\layer_statistics.csv",
+  "output_csv": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\SmolLM2-1.7B\\3_compression\\rank_budgets_a0p50_w0p25.csv",
+  "output_json": "D:\\\u5927\u5b66\u8bfe\u7a0b graduate\\2_DS 3001 ITC\\final_project_v3\\result\\SmolLM2-1.7B\\3_compression\\rank_budgets_a0p50_w0p25.json",
+  "rank_budget_tag": "a0p50_w0p25",
+  "rounding": "round",
+  "model_dimensions": {
+    "hidden_size": 2048,
+    "intermediate_size": 8192,
+    "max_rank": 2048,
+    "target_module_original_params": 16777216,
+    "target_module_factorized_params_per_rank": 10240
+  },
+  "base_model_id": "SmolLM2-1.7B",
+  "alpha": 0.5,
+  "w": 0.25,
+  "num_layers": 24,
+  "requested_uniform_rank": 819.2,
+  "uniform_rank": 819,
+  "uniform_total_rank_budget": 19656,
+  "layerwise_total_rank_budget": 19656,
+  "actual_factorized_param_ratio": 0.4998779296875,
+  "rank_signal_definition": "Min-max normalized mean centered activation e-rank ratio. The raw pre-normalized quantity is 0.5 * (mlp_input_effective_rank_centered_ratio + mlp_output_effective_rank_centered_ratio).",
+  "importance_signal_definition": "Min-max normalized mlp_output_uncentered_trace_log",
+  "protection_score_definition": "w * rank_signal + (1 - w) * importance_signal",
+  "normalization_note": "Both rank_signal and importance_signal are min-max normalized before the additive mix so that w has a more interpretable effect on the balance between the two signals."
+}
